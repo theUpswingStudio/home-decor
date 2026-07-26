@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Vestrel House mark</title>
+  <desc id="desc">A geometric V and H monogram divided by an oxide red line.</desc>
+  <rect width="64" height="64" rx="4" fill="#f4f0e8"/>
+  <path d="M12 14h7l9 29 9-29h7L32 52h-8L12 14Z" fill="#1f211d"/>
+  <path d="M45 14h6v38h-6V36H33v-6h12V14Z" fill="#1f211d"/>
+  <path d="M29 10h3v44h-3z" fill="#8a3d2f"/>
+</svg>

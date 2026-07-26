@@ -1,0 +1,24 @@
+.button {
+  width: 100%;
+  min-height: 3.25rem;
+  padding: var(--space-3) var(--space-6);
+  border: 1px solid var(--oxide);
+  border-radius: var(--radius-small);
+  background: var(--oxide);
+  color: var(--surface);
+  cursor: pointer;
+  font-weight: 650;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.button:hover {
+  border-color: var(--oxide-dark);
+  background: var(--oxide-dark);
+}
+
+.status {
+  min-height: 1.5rem;
+  margin: var(--space-2) 0 0;
+  color: var(--moss);
+  font-size: 0.8125rem;
+}

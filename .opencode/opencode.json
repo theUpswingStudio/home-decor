@@ -1,0 +1,19 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "chrome-devtools": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--executable-path=/usr/bin/chromium",
+        "--no-usage-statistics",
+        "--experimental-page-id-routing",
+        "--experimental-devtools",
+        "--userDataDir=$HOME/.cache/chrome-debug-profile"
+      ],
+      "enabled": true
+    }
+  }
+}

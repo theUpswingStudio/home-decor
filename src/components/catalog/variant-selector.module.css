@@ -1,0 +1,84 @@
+.selector {
+  margin-top: var(--space-8);
+}
+
+.fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  margin-bottom: var(--space-3);
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+
+.options {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.optionLabel {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr);
+  gap: var(--space-3);
+  min-height: 3rem;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-functional);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.optionLabel:has(.radio:checked) {
+  border-color: var(--ink);
+  background: var(--surface);
+}
+
+.radio {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--oxide);
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: var(--space-6) 0;
+  padding-block: var(--space-5, 1.25rem);
+  border-block: 1px solid var(--line-decorative);
+}
+
+.summaryItem {
+  min-width: 0;
+}
+
+.term {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.description {
+  margin: var(--space-1) 0 0;
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.45;
+}
+
+.price {
+  font-family: var(--font-newsreader), serif;
+  font-size: 1.5rem;
+}
+
+@media (min-width: 32rem) {
+  .summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
