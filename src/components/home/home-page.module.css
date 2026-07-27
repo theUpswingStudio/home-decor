@@ -35,7 +35,7 @@
 
 .heroTitle {
   margin: 0;
-  font-size: clamp(3.25rem, 5.75vw, 6.4rem);
+  font-size: clamp(3.25rem, 5.65vw, 5.5rem);
   font-weight: 430;
   letter-spacing: -0.055em;
   line-height: 0.91;
@@ -93,11 +93,16 @@
 .heroPrimaryImage,
 .heroDetailImage,
 .roomImageFrame,
-.materialImageFrame,
-.lookImageFrame {
+.materialImageFrame {
   position: relative;
   overflow: hidden;
   background: var(--line-decorative);
+}
+
+.roomImageFrame {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
 }
 
 .heroDetailImage {
@@ -120,7 +125,7 @@
 .roomsSection,
 .featuredSection,
 .lookSection {
-  padding-block: clamp(5rem, 9vw, 9rem);
+  padding-block: clamp(4.5rem, 7vw, 7rem);
 }
 
 .sectionIntro {
@@ -128,7 +133,6 @@
 }
 
 .sectionIntro h2,
-.lookIntro h2,
 .materialHeading h2,
 .consultation h2 {
   margin: 0;
@@ -149,12 +153,18 @@
 .roomGrid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: clamp(2rem, 4vw, 5rem) clamp(1rem, 2.5vw, 2.5rem);
-  margin-top: clamp(3rem, 6vw, 6rem);
+  grid-auto-flow: dense;
+  gap: clamp(0.75rem, 1.5vw, 1.5rem);
+  margin-top: clamp(2.5rem, 4vw, 4rem);
 }
 
 .roomPreview {
   min-width: 0;
+  height: 100%;
+  border: 1px solid var(--line-decorative);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
 }
 
 .roomLiving {
@@ -163,21 +173,18 @@
 }
 
 .roomDining {
-  grid-column: 9 / -1;
+  grid-column: 8 / span 5;
   grid-row: 1;
-  align-self: end;
-  padding-bottom: 2rem;
 }
 
 .roomBedroom {
-  grid-column: 2 / span 4;
+  grid-column: 1 / span 4;
   grid-row: 2;
 }
 
 .roomWorkspace {
-  grid-column: 7 / -1;
+  grid-column: 5 / span 8;
   grid-row: 2;
-  padding-top: clamp(1.5rem, 5vw, 5rem);
 }
 
 .roomLiving .roomImageFrame {
@@ -185,7 +192,7 @@
 }
 
 .roomDining .roomImageFrame {
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 4 / 3;
 }
 
 .roomBedroom .roomImageFrame {
@@ -197,7 +204,9 @@
 }
 
 .roomLink {
-  display: block;
+  display: grid;
+  height: 100%;
+  grid-template-rows: minmax(0, 1fr) auto;
   color: var(--ink);
   text-decoration: none;
 }
@@ -208,8 +217,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
   gap: 0.15rem 1rem;
-  padding: 0.9rem 0;
-  border-bottom: 1px solid var(--line-decorative);
+  padding: 0.9rem 1rem;
 }
 
 .roomCaption h3,
@@ -253,8 +261,9 @@
 .productGrid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: clamp(3rem, 6vw, 7rem) clamp(1rem, 2.5vw, 2.5rem);
-  margin-top: clamp(3.5rem, 7vw, 7rem);
+  grid-auto-flow: dense;
+  gap: clamp(0.75rem, 1.5vw, 1.5rem);
+  margin-top: clamp(2.5rem, 4vw, 4rem);
 }
 
 .productOne {
@@ -263,30 +272,28 @@
 }
 
 .productTwo {
-  grid-column: 9 / -1;
+  grid-column: 7 / span 3;
   grid-row: 1;
-  margin-top: clamp(3rem, 8vw, 8rem);
 }
 
 .productThree {
+  grid-column: 10 / span 3;
+  grid-row: 1;
+}
+
+.productFour {
   grid-column: 1 / span 3;
   grid-row: 2;
 }
 
-.productFour {
-  grid-column: 5 / span 4;
-  grid-row: 2;
-  margin-top: clamp(3rem, 6vw, 6rem);
-}
-
 .productFive {
-  grid-column: 10 / -1;
+  grid-column: 4 / span 3;
   grid-row: 2;
 }
 
 .productSix {
-  grid-column: 3 / span 8;
-  grid-row: 3;
+  grid-column: 7 / span 6;
+  grid-row: 2;
 }
 
 .materialStory {
@@ -314,8 +321,7 @@
   grid-column: 1 / span 6;
 }
 
-.materialHeading > p,
-.lookIntro > p:first-child {
+.materialHeading > p {
   margin: 0 0 1rem;
   font-size: 0.8125rem;
   font-weight: 620;
@@ -368,105 +374,34 @@
   background: var(--canvas);
 }
 
-.lookIntro {
-  max-width: 48rem;
-}
-
-.lookIntro > p:last-child {
-  max-width: 42rem;
-  margin: 1.25rem 0 0;
-  color: var(--muted);
-  font-size: clamp(1rem, 1.4vw, 1.125rem);
-  line-height: 1.65;
-}
-
-.lookLayout {
-  display: grid;
-  grid-template-columns: minmax(0, 8fr) minmax(17rem, 4fr);
-  gap: clamp(2rem, 4vw, 5rem);
-  margin-top: clamp(3rem, 6vw, 6rem);
-}
-
-.lookImageFrame {
-  aspect-ratio: 4 / 3;
-}
-
-.lookImageFrame .editorialImage {
-  object-position: center 56%;
-}
-
-.lookProducts {
-  align-self: end;
-}
-
-.lookProducts ol {
-  margin: 0 0 1rem;
-  padding: 0;
-  border-top: 1px solid var(--border-functional);
-  list-style: none;
-}
-
-.lookProducts li {
-  border-bottom: 1px solid var(--line-decorative);
-}
-
-.lookProducts li > a {
-  display: grid;
-  min-height: 3.75rem;
-  grid-template-columns: 2rem minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.75rem;
-  color: var(--ink);
-  text-decoration: none;
-}
-
-.lookProducts li > a:hover .lookProductName {
-  text-decoration-color: currentColor;
-}
-
-.lookIndex,
-.lookPrice {
-  color: var(--muted);
-  font-size: 0.75rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.lookProductName {
-  font-size: 0.875rem;
-  font-weight: 620;
-  line-height: 1.35;
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-underline-offset: 0.2em;
-  transition: text-decoration-color 150ms ease;
-}
-
-.lookPrice {
-  white-space: nowrap;
-}
-
 .consultation {
-  padding-block: clamp(5rem, 9vw, 9rem);
+  padding-block: clamp(4rem, 7vw, 7rem);
   border-top: 1px solid var(--line-decorative);
   border-bottom: 1px solid var(--line-decorative);
-  background: var(--surface);
+  background: var(--canvas);
 }
 
 .consultationInner {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 2rem;
+  gap: clamp(1.5rem, 3vw, 3rem);
+  padding: clamp(1.5rem, 4vw, 4rem);
+  border: 1px solid var(--line-decorative);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
 }
 
 .consultation h2 {
-  grid-column: 1 / span 8;
-  font-size: clamp(3rem, 6vw, 6.6rem);
+  grid-column: 1 / span 7;
+  align-self: center;
+  font-size: clamp(3rem, 5.5vw, 6rem);
 }
 
 .consultationAction {
-  grid-column: 7 / span 5;
-  margin-top: clamp(1rem, 3vw, 3rem);
-  padding-left: clamp(0rem, 3vw, 3rem);
+  grid-column: 8 / span 5;
+  align-self: center;
+  padding-left: clamp(1.5rem, 3vw, 3rem);
   border-left: 1px solid var(--oxide);
 }
 
@@ -476,6 +411,10 @@
   color: var(--muted);
   font-size: clamp(1rem, 1.4vw, 1.125rem);
   line-height: 1.65;
+}
+
+.consultationAction :global(.button) {
+  white-space: nowrap;
 }
 
 .planning {
@@ -521,9 +460,44 @@
   line-height: 1.55;
 }
 
-@media (max-width: 63.99rem) {
+@media (max-width: 64rem) {
   .heroInner {
     grid-template-columns: minmax(15rem, 5fr) minmax(0, 6fr);
+  }
+
+  .roomGrid,
+  .productGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .roomLiving,
+  .roomDining,
+  .roomBedroom,
+  .roomWorkspace,
+  .productTwo,
+  .productThree,
+  .productFour,
+  .productFive {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .productOne,
+  .productSix {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+
+  .roomLiving .roomImageFrame,
+  .roomDining .roomImageFrame,
+  .roomBedroom .roomImageFrame,
+  .roomWorkspace .roomImageFrame {
+    aspect-ratio: 4 / 3;
+  }
+
+  .consultation h2 {
+    font-size: clamp(2.75rem, 5vw, 4.25rem);
   }
 
   .planningGrid {
@@ -590,11 +564,10 @@
   .roomsSection,
   .featuredSection,
   .lookSection {
-    padding-block: 4.75rem;
+    padding-block: 4rem;
   }
 
   .sectionIntro h2,
-  .lookIntro h2,
   .materialHeading h2,
   .consultation h2 {
     font-size: clamp(2.55rem, 13vw, 4rem);
@@ -604,8 +577,8 @@
   .productGrid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 3.5rem;
-    margin-top: 3rem;
+    gap: 1.25rem;
+    margin-top: 2rem;
   }
 
   .roomLiving,
@@ -628,7 +601,7 @@
   .roomDining .roomImageFrame,
   .roomBedroom .roomImageFrame,
   .roomWorkspace .roomImageFrame {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 16 / 10;
   }
 
   .featuredIntro {
@@ -654,18 +627,8 @@
     grid-column: 1;
   }
 
-  .lookLayout {
-    grid-template-columns: 1fr;
-    gap: 2.5rem;
-    margin-top: 3rem;
-  }
-
-  .lookImageFrame {
-    aspect-ratio: 4 / 3;
-  }
-
   .consultation {
-    padding-block: 4.75rem;
+    padding-block: 4rem;
   }
 
   .consultationInner {
@@ -678,7 +641,6 @@
   }
 
   .consultationAction {
-    margin-top: 0.5rem;
     padding: 1.5rem 0 0;
     border-top: 1px solid var(--oxide);
     border-left: 0;
@@ -717,14 +679,6 @@
     justify-content: center;
   }
 
-  .lookProducts li > a {
-    grid-template-columns: 1.5rem minmax(0, 1fr);
-    padding-block: 0.65rem;
-  }
-
-  .lookPrice {
-    grid-column: 2;
-  }
 }
 
 @media (min-width: 48rem) and (max-height: 43rem) {

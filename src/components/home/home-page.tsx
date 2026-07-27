@@ -10,27 +10,28 @@ import {
   getCategoryById,
   getCollectionBySlug,
   getFeaturedProducts,
-  getLookBySlug,
   getProductsByLook,
   getRoomById,
 } from "@/lib/catalog";
 import styles from "./home-page.module.css";
+import { LookCarousel } from "./look-carousel";
+import carouselStyles from "./look-carousel.module.css";
 import previewStyles from "./product-preview.module.css";
 
 const featuredPlacements = [
-  { className: styles.productOne, shape: "landscape" as const, sizes: "(max-width: 768px) calc(100vw - 2rem), 46vw" },
-  { className: styles.productTwo, shape: "portrait" as const, sizes: "(max-width: 768px) calc(100vw - 2rem), 36vw" },
-  { className: styles.productThree, shape: "portrait" as const, sizes: "(max-width: 768px) calc(100vw - 2rem), 29vw" },
-  { className: styles.productFour, shape: "square" as const, sizes: "(max-width: 768px) calc(100vw - 2rem), 34vw" },
-  { className: styles.productFive, shape: "portrait" as const, sizes: "(max-width: 768px) calc(100vw - 2rem), 24vw" },
-  { className: styles.productSix, shape: "wide" as const, sizes: "(max-width: 768px) calc(100vw - 2rem), 58vw" },
+  { className: styles.productOne, shape: "landscape" as const, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(100vw - 4rem), 47vw" },
+  { className: styles.productTwo, shape: "portrait" as const, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), 23vw" },
+  { className: styles.productThree, shape: "portrait" as const, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), 23vw" },
+  { className: styles.productFour, shape: "square" as const, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), 23vw" },
+  { className: styles.productFive, shape: "portrait" as const, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), 23vw" },
+  { className: styles.productSix, shape: "wide" as const, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(100vw - 4rem), 47vw" },
 ];
 
 const roomPlacements = [
-  { className: styles.roomLiving, sizes: "(max-width: 768px) calc(100vw - 2rem), 55vw" },
-  { className: styles.roomDining, sizes: "(max-width: 768px) calc(100vw - 2rem), 30vw" },
-  { className: styles.roomBedroom, sizes: "(max-width: 768px) calc(100vw - 2rem), 31vw" },
-  { className: styles.roomWorkspace, sizes: "(max-width: 768px) calc(100vw - 2rem), 47vw" },
+  { className: styles.roomLiving, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), 55vw" },
+  { className: styles.roomDining, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), 39vw" },
+  { className: styles.roomBedroom, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), 31vw" },
+  { className: styles.roomWorkspace, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), 62vw" },
 ];
 
 function getPrimaryImage(images: readonly CatalogImage[]): CatalogImage {
@@ -128,15 +129,12 @@ export function HomePage() {
   const heroDetail = catalog.site.heroMedia[2] ?? catalog.site.heroMedia[1];
   const featuredProducts = getFeaturedProducts(6);
   const materialCollection = getCollectionBySlug("material-study");
-  const look = getLookBySlug("warm-monolith");
 
-  if (!materialCollection || !look) {
+  if (!materialCollection || catalog.looks.length === 0) {
     throw new Error("Homepage editorial selections are missing from the catalog.");
   }
 
   const materialImage = getPrimaryImage(materialCollection.media);
-  const lookImage = getPrimaryImage(look.media);
-  const lookProducts = getProductsByLook(look);
   const planningPolicies = catalog.policies.filter((policy) =>
     ["shipping-delivery", "installation-access", "materials-swatches"].includes(
       policy.slug,
@@ -275,58 +273,76 @@ export function HomePage() {
         </Container>
       </section>
 
-      <section className={styles.lookSection} aria-labelledby="look-title">
+      <section className={styles.lookSection} aria-label="Curated looks">
         <Container>
-          <div className={styles.lookIntro}>
-            <p>{look.eyebrow}</p>
-            <h2 id="look-title">{look.name}</h2>
-            <p>{look.description}</p>
-          </div>
-          <div className={styles.lookLayout}>
-            <div className={styles.lookImageFrame}>
-              <Image
-                className={styles.editorialImage}
-                src={lookImage.url}
-                alt={lookImage.alt}
-                fill
-                sizes="(max-width: 768px) calc(100vw - 2rem), (max-width: 1439px) 62vw, 860px"
-              />
-            </div>
-            <div className={styles.lookProducts}>
-              <ol>
-                {lookProducts.map((product, index) => (
-                  <li key={product.id}>
-                    <Link href={`/products/${product.slug}`} prefetch={false}>
-                      <span className={styles.lookIndex} aria-hidden="true">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      <span className={styles.lookProductName}>{product.name}</span>
-                      <span className={styles.lookPrice}>
-                        {formatProductPrice(product)}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ol>
-              <Link className={styles.textLink} href={`/looks/${look.slug}`}>
-                View the complete look
-                <ArrowRightIcon size={18} weight="regular" aria-hidden="true" />
-              </Link>
-            </div>
-          </div>
+          <LookCarousel labels={catalog.looks.map((look) => look.name)}>
+            {catalog.looks.map((look) => {
+              const lookImage = getPrimaryImage(look.media);
+              const lookProducts = getProductsByLook(look);
+
+              return (
+                <article className={carouselStyles.lookCard} key={look.id}>
+                  <header className={carouselStyles.lookHeader}>
+                    <p className={carouselStyles.lookEyebrow}>{look.eyebrow}</p>
+                    <h2 className={carouselStyles.lookTitle}>{look.name}</h2>
+                    <p className={carouselStyles.lookDescription}>{look.description}</p>
+                  </header>
+                  <div className={carouselStyles.lookLayout}>
+                    <figure className={carouselStyles.lookFigure}>
+                      <div className={carouselStyles.lookImageFrame}>
+                        <Image
+                          className={carouselStyles.lookImage}
+                          src={lookImage.url}
+                          alt={lookImage.alt}
+                          fill
+                          sizes="(max-width: 768px) calc(100vw - 4rem), (max-width: 1024px) 55vw, (max-width: 1439px) 52vw, 760px"
+                        />
+                      </div>
+                      <figcaption className={carouselStyles.lookCredit}>
+                        Reference interior image. Photograph by {lookImage.creatorName}.
+                      </figcaption>
+                    </figure>
+                    <div className={carouselStyles.lookProducts}>
+                      <ol>
+                        {lookProducts.map((product, index) => (
+                          <li key={product.id}>
+                            <Link href={`/products/${product.slug}`} prefetch={false}>
+                              <span className={carouselStyles.lookIndex} aria-hidden="true">
+                                {String(index + 1).padStart(2, "0")}
+                              </span>
+                              <span className={carouselStyles.lookProductName}>{product.name}</span>
+                              <span className={carouselStyles.lookPrice}>
+                                {formatProductPrice(product)}
+                              </span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ol>
+                      <Link className={carouselStyles.completeLink} href={`/looks/${look.slug}`}>
+                        View the complete look
+                        <ArrowRightIcon size={18} weight="regular" aria-hidden="true" />
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </LookCarousel>
         </Container>
       </section>
 
       <section className={styles.consultation} aria-labelledby="consultation-title">
-        <Container className={styles.consultationInner}>
-          <h2 id="consultation-title">{catalog.inquiry.title}</h2>
-          <div className={styles.consultationAction}>
-            <p>
-              A consultant will shape an edited furniture plan, confirm fit, and prepare a transparent proposal.
-            </p>
-            <ButtonLink href="/design-services/inquire">
-              {catalog.site.primaryCtaLabel}
-            </ButtonLink>
+        <Container>
+          <div className={styles.consultationInner}>
+            <h2 id="consultation-title">{catalog.inquiry.title}</h2>
+            <div className={styles.consultationAction}>
+              <p>
+                A consultant will shape an edited furniture plan, confirm fit, and prepare a transparent proposal.
+              </p>
+              <ButtonLink href="/design-services/inquire">
+                {catalog.site.primaryCtaLabel}
+              </ButtonLink>
+            </div>
           </div>
         </Container>
       </section>

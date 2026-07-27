@@ -11,7 +11,7 @@
         "--no-usage-statistics",
         "--experimental-page-id-routing",
         "--experimental-devtools",
-        "--userDataDir=$HOME/.cache/chrome-debug-profile"
+        "--userDataDir=/home/shubham/.cache/chrome-debug-profile"
       ],
       "enabled": true
     }

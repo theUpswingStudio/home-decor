@@ -14,6 +14,7 @@
   --moss: #4f6047;
   --border-functional: #8f897d;
   --line-decorative: #d4cec2;
+  --card-shadow: 0 1px 2px rgba(85, 58, 38, 0.08), 0 12px 30px rgba(85, 58, 38, 0.055);
 
   --background: var(--canvas);
   --foreground: var(--ink);

@@ -1,0 +1,280 @@
+.carousel {
+  min-width: 0;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  margin-bottom: 1rem;
+}
+
+.lookControls,
+.stepControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.lookControl,
+.stepControl {
+  min-height: 2.75rem;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--border-functional);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  line-height: 1.25rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.lookControl:hover,
+.stepControl:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+
+.lookControl[aria-current="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.stepControl:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.track {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding-block: 0.125rem 2rem;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.track::-webkit-scrollbar {
+  display: none;
+}
+
+.slide {
+  width: 100%;
+  min-width: 100%;
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.lookCard {
+  display: grid;
+  gap: clamp(1.5rem, 3vw, 3rem);
+  padding: clamp(1.25rem, 3vw, 3rem);
+  border: 1px solid var(--line-decorative);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+}
+
+.lookHeader {
+  max-width: 48rem;
+}
+
+.lookEyebrow {
+  margin: 0 0 0.75rem;
+  color: var(--oxide);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.lookTitle {
+  margin: 0;
+  font-size: clamp(2.75rem, 5vw, 5.2rem);
+  font-weight: 430;
+  letter-spacing: -0.045em;
+  line-height: 0.96;
+}
+
+.lookDescription {
+  max-width: 42rem;
+  margin: 1rem 0 0;
+  color: var(--muted);
+  font-size: clamp(1rem, 1.4vw, 1.125rem);
+  line-height: 1.65;
+}
+
+.lookLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(17rem, 5fr);
+  align-items: end;
+  gap: clamp(1.5rem, 3vw, 3rem);
+}
+
+.lookFigure {
+  min-width: 0;
+  margin: 0;
+}
+
+.lookImageFrame {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background: var(--line-decorative);
+}
+
+.lookImage {
+  object-fit: cover;
+  object-position: center 56%;
+}
+
+.lookCredit {
+  margin: 0;
+  padding-top: 0.65rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.lookProducts ol {
+  margin: 0 0 1rem;
+  padding: 0;
+  border-top: 1px solid var(--border-functional);
+  list-style: none;
+}
+
+.lookProducts li {
+  border-bottom: 1px solid var(--line-decorative);
+}
+
+.lookProducts li > a {
+  display: grid;
+  min-height: 3.5rem;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.lookProducts li > a:hover .lookProductName {
+  text-decoration-color: currentColor;
+}
+
+.lookIndex,
+.lookPrice {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.lookProductName {
+  font-size: 0.875rem;
+  font-weight: 620;
+  line-height: 1.35;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2em;
+  transition: text-decoration-color 150ms ease;
+}
+
+.lookPrice {
+  white-space: nowrap;
+}
+
+.completeLink {
+  display: inline-flex;
+  min-height: 3rem;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.875rem;
+  font-weight: 620;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  transition: text-decoration-color 150ms ease;
+}
+
+.completeLink:hover {
+  text-decoration-color: currentColor;
+}
+
+@media (max-width: 64rem) {
+  .lookLayout {
+    grid-template-columns: minmax(0, 7fr) minmax(15rem, 5fr);
+  }
+
+  .lookProducts li > a {
+    min-height: 3.25rem;
+    grid-template-columns: 1.5rem minmax(0, 1fr);
+    gap: 0.5rem;
+    padding-block: 0.35rem;
+  }
+
+  .lookPrice {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 48rem) {
+  .toolbar {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .lookControls {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+
+  .lookControl,
+  .stepControl {
+    min-height: 2.625rem;
+    padding-inline: 0.6rem;
+  }
+
+  .stepControls {
+    justify-content: flex-end;
+  }
+
+  .lookCard {
+    gap: 1.5rem;
+    padding: 1rem;
+  }
+
+  .lookTitle {
+    font-size: clamp(2.5rem, 12vw, 3.75rem);
+  }
+
+  .lookLayout {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 1.5rem;
+  }
+
+  .lookImageFrame {
+    aspect-ratio: 16 / 10;
+  }
+}
+
+@media (max-width: 23.99rem) {
+  .lookControls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    scroll-behavior: auto;
+  }
+}
