@@ -2,7 +2,15 @@
 
 import { ListIcon, XIcon } from "@phosphor-icons/react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import {
+  startTransition,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  ViewTransition,
+} from "react";
 import { primaryNavigation } from "./navigation";
 
 const focusableSelector = 'button:not([disabled]), a[href]';
@@ -28,15 +36,34 @@ function makeObscuredSiblingsInert(root: HTMLElement): () => void {
 }
 
 export function MobileNavigation() {
-  const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+  const [openPath, setOpenPath] = useState<string | null>(null);
+  const [trackedPath, setTrackedPath] = useState(pathname);
+  const isOpen = openPath === pathname;
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const restoreTriggerFocusRef = useRef(true);
+
+  if (trackedPath !== pathname) {
+    setTrackedPath(pathname);
+    setOpenPath(null);
+  }
+
+  function openMenu() {
+    restoreTriggerFocusRef.current = true;
+    startTransition(() => setOpenPath(pathname));
+  }
+
+  function closeMenu(restoreTriggerFocus = true) {
+    restoreTriggerFocusRef.current = restoreTriggerFocus;
+    startTransition(() => setOpenPath(null));
+  }
 
   useEffect(() => {
     const desktopQuery = window.matchMedia("(min-width: 64rem)");
     const closeAtDesktop = () => {
-      if (desktopQuery.matches) setIsOpen(false);
+      if (desktopQuery.matches) closeMenu(false);
     };
 
     desktopQuery.addEventListener("change", closeAtDesktop);
@@ -44,30 +71,46 @@ export function MobileNavigation() {
   }, []);
 
   useEffect(() => {
+    const closeForHistoryNavigation = () => {
+      restoreTriggerFocusRef.current = false;
+      startTransition(() => setOpenPath(null));
+    };
+
+    window.addEventListener("popstate", closeForHistoryNavigation);
+    return () =>
+      window.removeEventListener("popstate", closeForHistoryNavigation);
+  }, []);
+
+  useLayoutEffect(() => {
     if (!isOpen) return;
 
     const previousOverflow = document.body.style.overflow;
+    const pathWhenOpened = pathname;
+    const trigger = triggerRef.current;
+    const triggerWasInert = trigger?.inert ?? false;
     document.body.style.overflow = "hidden";
     const restoreInert = rootRef.current
       ? makeObscuredSiblingsInert(rootRef.current)
       : () => undefined;
+    if (trigger) trigger.inert = true;
 
     const focusFrame = window.requestAnimationFrame(() => {
-      panelRef.current?.querySelector<HTMLElement>("a[href]")?.focus();
+      panelRef.current
+        ?.querySelector<HTMLElement>(".mobile-navigation__link")
+        ?.focus();
     });
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        setIsOpen(false);
-        window.requestAnimationFrame(() => triggerRef.current?.focus());
+        closeMenu();
         return;
       }
 
       if (event.key !== "Tab") return;
 
       const focusableElements = Array.from(
-        rootRef.current?.querySelectorAll<HTMLElement>(focusableSelector) ?? [],
+        panelRef.current?.querySelectorAll<HTMLElement>(focusableSelector) ?? [],
       ).filter((element) => element.getClientRects().length > 0);
       const firstElement = focusableElements[0];
       const lastElement = focusableElements.at(-1);
@@ -83,26 +126,25 @@ export function MobileNavigation() {
       }
     };
 
-    const handlePointerDown = (event: PointerEvent) => {
-      if (
-        event.target instanceof Node &&
-        !rootRef.current?.contains(event.target)
-      ) {
-        setIsOpen(false);
-      }
-    };
-
     document.addEventListener("keydown", handleKeyDown);
-    document.addEventListener("pointerdown", handlePointerDown, true);
 
     return () => {
+      const shouldRestoreTriggerFocus =
+        restoreTriggerFocusRef.current &&
+        window.location.pathname === pathWhenOpened;
+      restoreTriggerFocusRef.current = true;
       window.cancelAnimationFrame(focusFrame);
       document.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("pointerdown", handlePointerDown, true);
       document.body.style.overflow = previousOverflow;
       restoreInert();
+      if (trigger) trigger.inert = triggerWasInert;
+      if (shouldRestoreTriggerFocus) {
+        window.requestAnimationFrame(() =>
+          trigger?.focus({ preventScroll: true }),
+        );
+      }
     };
-  }, [isOpen]);
+  }, [isOpen, pathname]);
 
   return (
     <div className="mobile-navigation" ref={rootRef}>
@@ -112,44 +154,73 @@ export function MobileNavigation() {
         className="mobile-navigation__trigger"
         aria-controls="mobile-navigation-panel"
         aria-expanded={isOpen}
-        aria-label={isOpen ? "Close menu" : "Open menu"}
-        onClick={() => setIsOpen((open) => !open)}
+        aria-label="Open menu"
+        onClick={openMenu}
       >
-        {isOpen ? (
-          <XIcon size={22} weight="regular" aria-hidden="true" />
-        ) : (
-          <ListIcon size={24} weight="regular" aria-hidden="true" />
-        )}
+        <ListIcon size={24} weight="regular" aria-hidden="true" />
       </button>
 
       {isOpen ? (
-        <div
-          id="mobile-navigation-panel"
-          ref={panelRef}
-          className="mobile-navigation__panel"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Main menu"
-        >
-          <nav className="mobile-navigation__nav" aria-label="Mobile">
-            <ul className="mobile-navigation__list">
-              {primaryNavigation.map((item, index) => (
-                <li key={item.href}>
-                  <Link
-                    className="mobile-navigation__link"
-                    href={item.href}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <span>{item.label}</span>
-                    <span className="mobile-navigation__index" aria-hidden="true">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </div>
+        <>
+          <ViewTransition
+            name="mobile-navigation-backdrop"
+            default="none"
+            enter="mobile-navigation-backdrop-enter"
+            exit="mobile-navigation-backdrop-exit"
+          >
+            <div
+              className="mobile-navigation__backdrop"
+              aria-hidden="true"
+              onPointerDown={() => closeMenu()}
+            />
+          </ViewTransition>
+          <ViewTransition
+            name="mobile-navigation-panel"
+            default="none"
+            enter="mobile-navigation-panel-enter"
+            exit="mobile-navigation-panel-exit"
+          >
+            <div
+              id="mobile-navigation-panel"
+              ref={panelRef}
+              className="mobile-navigation__panel"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Main menu"
+            >
+              <button
+                className="mobile-navigation__close"
+                type="button"
+                aria-label="Close menu"
+                onClick={() => closeMenu()}
+              >
+                <XIcon size={22} weight="regular" aria-hidden="true" />
+              </button>
+              <nav className="mobile-navigation__nav" aria-label="Mobile">
+                <ul className="mobile-navigation__list">
+                  {primaryNavigation.map((item, index) => (
+                    <li key={item.href}>
+                      <Link
+                        className="mobile-navigation__link"
+                        href={item.href}
+                        aria-current={item.href === pathname ? "page" : undefined}
+                        onClick={() => closeMenu(item.href === pathname)}
+                      >
+                        <span>{item.label}</span>
+                        <span
+                          className="mobile-navigation__index"
+                          aria-hidden="true"
+                        >
+                          {String(index + 1).padStart(2, "0")}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            </div>
+          </ViewTransition>
+        </>
       ) : null}
     </div>
   );

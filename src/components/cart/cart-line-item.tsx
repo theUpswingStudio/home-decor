@@ -86,7 +86,12 @@ export function CartLineItem({
           <p className={styles.unitPrice}>
             {formatPrice(line.variant.priceMinor)} each
           </p>
-          <button className={styles.remove} type="button" onClick={onRemove}>
+          <button
+            id={`remove-${line.variantId}`}
+            className={styles.remove}
+            type="button"
+            onClick={onRemove}
+          >
             Remove <span className="sr-only">{line.product.name}</span>
           </button>
         </div>

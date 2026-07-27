@@ -4,14 +4,35 @@
 
 .stage {
   margin: 0;
-  background: var(--line-decorative);
+}
+
+.stageMedia {
+  display: grid;
+  width: 100%;
+  overflow: hidden;
+  aspect-ratio: 3 / 2;
+  background: var(--image-stage);
 }
 
 .stageImage {
+  grid-area: 1 / 1;
   width: 100%;
-  height: auto;
-  aspect-ratio: 3 / 2;
+  height: 100%;
   object-fit: cover;
+  opacity: 1;
+  transition: opacity 200ms ease;
+}
+
+.stageImageOutgoing {
+  opacity: 0;
+}
+
+.stageImagePending {
+  opacity: 0;
+}
+
+.stageImagePendingVisible {
+  opacity: 1;
 }
 
 .caption {
@@ -44,7 +65,7 @@
 }
 
 .thumbnailButton[aria-pressed="true"] {
-  border-color: var(--ink);
+  border-color: var(--moss);
 }
 
 .thumbnail {
@@ -52,4 +73,10 @@
   height: auto;
   aspect-ratio: 3 / 2;
   object-fit: cover;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stageImage {
+    transition: none;
+  }
 }

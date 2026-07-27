@@ -29,6 +29,8 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
       description={collection.description}
       parentHref="/collections"
       parentLabel="Collections"
+      kind="collection"
+      slug={collection.slug}
       media={collection.media}
       kicker={collection.seasonLabel}
       notes={collection.palette.map((color) => `${color} anchors the collection palette.`)}

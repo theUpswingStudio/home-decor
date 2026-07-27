@@ -3,6 +3,7 @@ import Link from "next/link";
 export interface BreadcrumbItem {
   href?: string;
   label: string;
+  transitionTypes?: string[];
 }
 
 interface BreadcrumbsProps {
@@ -23,7 +24,11 @@ export function Breadcrumbs({ items, className = "" }: BreadcrumbsProps) {
           return (
             <li className="breadcrumbs__item" key={`${item.href}-${item.label}`}>
               {item.href && !isCurrent ? (
-                <Link className="breadcrumbs__link" href={item.href}>
+                <Link
+                  className="breadcrumbs__link"
+                  href={item.href}
+                  transitionTypes={item.transitionTypes}
+                >
                   {item.label}
                 </Link>
               ) : (

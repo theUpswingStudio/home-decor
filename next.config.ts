@@ -54,6 +54,9 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactCompiler: true,
   poweredByHeader: false,
+  experimental: {
+    viewTransition: true,
+  },
   images: {
     remotePatterns: [
       {

@@ -1,6 +1,11 @@
 import { ArrowRightIcon } from "@phosphor-icons/react/ssr";
 import Image from "next/image";
 import Link from "next/link";
+import {
+  SharedMediaTransition,
+  sharedMediaName,
+  sharedMediaTransitionType,
+} from "@/components/motion/shared-media-transition";
 import type { CatalogImage, Product, Room } from "@/data/catalog";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
@@ -67,7 +72,12 @@ function FeaturedProductPreview({
 
   return (
     <article className={`${previewStyles.preview} ${className}`.trim()}>
-      <Link className={previewStyles.link} href={`/products/${product.slug}`} prefetch={false}>
+        <Link
+          className={previewStyles.link}
+          href={`/products/${product.slug}`}
+          prefetch={false}
+          data-pressable="card"
+        >
         <div className={`${previewStyles.imageFrame} ${shapeClass}`}>
           <Image
             className={previewStyles.image}
@@ -104,16 +114,27 @@ function RoomPreview({
 
   return (
     <article className={`${styles.roomPreview} ${className}`}>
-      <Link className={styles.roomLink} href={`/rooms/${room.slug}`} prefetch={false}>
-        <div className={styles.roomImageFrame}>
-          <Image
-            className={styles.editorialImage}
-            src={image.url}
-            alt={image.alt}
-            fill
-            sizes={sizes}
-          />
-        </div>
+      <Link
+        className={styles.roomLink}
+        href={`/rooms/${room.slug}`}
+        prefetch={false}
+        transitionTypes={[sharedMediaTransitionType("room", room.slug)]}
+      >
+        <SharedMediaTransition kind="room" slug={room.slug}>
+          <div
+            className={styles.roomImageFrame}
+            data-shared-media-name={sharedMediaName("room", room.slug)}
+            data-primary-image-id={image.id}
+          >
+            <Image
+              className={styles.editorialImage}
+              src={image.url}
+              alt={image.alt}
+              fill
+              sizes={sizes}
+            />
+          </div>
+        </SharedMediaTransition>
         <div className={styles.roomCaption}>
           <h3>{room.name}</h3>
           <p>{room.shortDescription}</p>
@@ -240,15 +261,24 @@ export function HomePage() {
       </section>
 
       <section className={styles.materialStory} aria-labelledby="material-title">
-        <div className={styles.materialImageFrame}>
-          <Image
-            className={styles.editorialImage}
-            src={materialImage.url}
-            alt={materialImage.alt}
-            fill
-            sizes="100vw"
-          />
-        </div>
+        <SharedMediaTransition kind="collection" slug={materialCollection.slug}>
+          <div
+            className={styles.materialImageFrame}
+            data-shared-media-name={sharedMediaName(
+              "collection",
+              materialCollection.slug,
+            )}
+            data-primary-image-id={materialImage.id}
+          >
+            <Image
+              className={styles.editorialImage}
+              src={materialImage.url}
+              alt={materialImage.alt}
+              fill
+              sizes="100vw"
+            />
+          </div>
+        </SharedMediaTransition>
         <Container className={styles.materialBody}>
           <div className={styles.materialHeading}>
             <p>{materialCollection.seasonLabel}</p>
@@ -265,6 +295,12 @@ export function HomePage() {
             <Link
               className={styles.materialLink}
               href={`/collections/${materialCollection.slug}`}
+              transitionTypes={[
+                sharedMediaTransitionType(
+                  "collection",
+                  materialCollection.slug,
+                ),
+              ]}
             >
               Explore the collection
               <ArrowRightIcon size={18} weight="regular" aria-hidden="true" />
@@ -289,15 +325,21 @@ export function HomePage() {
                   </header>
                   <div className={carouselStyles.lookLayout}>
                     <figure className={carouselStyles.lookFigure}>
-                      <div className={carouselStyles.lookImageFrame}>
-                        <Image
-                          className={carouselStyles.lookImage}
-                          src={lookImage.url}
-                          alt={lookImage.alt}
-                          fill
-                          sizes="(max-width: 768px) calc(100vw - 4rem), (max-width: 1024px) 55vw, (max-width: 1439px) 52vw, 760px"
-                        />
-                      </div>
+                      <SharedMediaTransition kind="look" slug={look.slug}>
+                        <div
+                          className={carouselStyles.lookImageFrame}
+                          data-shared-media-name={sharedMediaName("look", look.slug)}
+                          data-primary-image-id={lookImage.id}
+                        >
+                          <Image
+                            className={carouselStyles.lookImage}
+                            src={lookImage.url}
+                            alt={lookImage.alt}
+                            fill
+                            sizes="(max-width: 768px) calc(100vw - 4rem), (max-width: 1024px) 55vw, (max-width: 1439px) 52vw, 760px"
+                          />
+                        </div>
+                      </SharedMediaTransition>
                       <figcaption className={carouselStyles.lookCredit}>
                         Reference interior image. Photograph by {lookImage.creatorName}.
                       </figcaption>
@@ -318,7 +360,13 @@ export function HomePage() {
                           </li>
                         ))}
                       </ol>
-                      <Link className={carouselStyles.completeLink} href={`/looks/${look.slug}`}>
+                      <Link
+                        className={carouselStyles.completeLink}
+                        href={`/looks/${look.slug}`}
+                        transitionTypes={[
+                          sharedMediaTransitionType("look", look.slug),
+                        ]}
+                      >
                         View the complete look
                         <ArrowRightIcon size={18} weight="regular" aria-hidden="true" />
                       </Link>

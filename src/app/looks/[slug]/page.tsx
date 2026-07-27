@@ -29,6 +29,8 @@ export default async function LookPage({ params }: LookPageProps) {
       description={look.description}
       parentHref="/looks"
       parentLabel="The lookbook"
+      kind="look"
+      slug={look.slug}
       media={look.media}
       kicker={look.eyebrow}
       notes={look.stylingNotes}

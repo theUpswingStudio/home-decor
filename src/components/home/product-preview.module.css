@@ -1,7 +1,8 @@
 .preview {
   min-width: 0;
   height: 100%;
-  border: 1px solid var(--line-decorative);
+  overflow: clip;
+  border: 1px solid var(--card-border);
   border-radius: var(--radius-small);
   background: var(--surface);
   box-shadow: var(--card-shadow);
@@ -13,6 +14,7 @@
   grid-template-rows: minmax(0, 1fr) auto;
   color: var(--ink);
   text-decoration: none;
+  transition: transform 90ms ease-out;
 }
 
 .imageFrame {
@@ -21,7 +23,7 @@
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  background: var(--line-decorative);
+  background: var(--image-stage);
 }
 
 .landscape {

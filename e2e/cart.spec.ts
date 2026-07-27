@@ -68,7 +68,9 @@ test("PDP selection adds to the persistent cart and cart controls update state",
     "All cart selections cleared.",
   );
   await expect(cartLink).toHaveAccessibleName("Cart, 0 items");
-  await expect(page.getByRole("heading", { name: "Nothing is set aside yet." })).toBeVisible();
+  const emptyHeading = page.getByRole("heading", { name: "Nothing is set aside yet." });
+  await expect(emptyHeading).toBeVisible();
+  await expect(emptyHeading).toBeFocused();
 });
 
 test("add to cart reports a quantity-limit no-op", async ({ page }) => {
@@ -166,4 +168,76 @@ test("the full cart drops persisted variants that no longer resolve", async ({
       }, "vestrel-house:cart"),
     )
     .toEqual([{ variantId, quantity: 2 }]);
+});
+
+test("a late cross-tab removal recovers focus and announces the stale action", async ({
+  page,
+}) => {
+  const variant = catalog.variants.find(
+    (candidate) => candidate.id === product.variantIds[0],
+  )!;
+  const otherProduct = catalog.products.find(
+    (candidate) => candidate.id !== product.id,
+  )!;
+  const otherVariant = catalog.variants.find(
+    (candidate) => candidate.id === otherProduct.variantIds[0],
+  )!;
+  await page.addInitScript(
+    ({ storageKey, items }) => {
+      window.localStorage.setItem(
+        storageKey,
+        JSON.stringify({ version: 1, updatedAt: Date.now(), items }),
+      );
+    },
+    {
+      storageKey: "vestrel-house:cart",
+      items: [
+        { variantId: variant.id, quantity: 1 },
+        { variantId: otherVariant.id, quantity: 1 },
+      ],
+    },
+  );
+  await page.goto("/cart");
+  const staleRemove = page.getByRole("button", {
+    name: `Remove ${product.name}`,
+  });
+  await expect(staleRemove).toBeVisible();
+
+  await staleRemove.evaluate(
+    (button, { storageKey, remainingVariantId }) => {
+      const previousValue = window.localStorage.getItem(storageKey);
+      const nextValue = JSON.stringify({
+        version: 1,
+        updatedAt: Date.now() + 1_000,
+        items: [{ variantId: remainingVariantId, quantity: 1 }],
+      });
+      window.localStorage.setItem(
+        storageKey,
+        nextValue,
+      );
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: storageKey,
+          oldValue: previousValue,
+          newValue: nextValue,
+          storageArea: window.localStorage,
+          url: window.location.href,
+        }),
+      );
+      (button as HTMLButtonElement).click();
+    },
+    {
+      storageKey: "vestrel-house:cart",
+      remainingVariantId: otherVariant.id,
+    },
+  );
+
+  await expect(page.getByRole("status")).toHaveText(
+    new RegExp(
+      `^${product.name}, SKU ${variant.sku}, (?:was already )?removed from cart\\.$`,
+    ),
+  );
+  await expect(
+    page.getByRole("button", { name: `Remove ${otherProduct.name}` }),
+  ).toBeFocused();
 });

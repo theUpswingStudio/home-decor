@@ -15,9 +15,11 @@ export default function CollectionsPage() {
       introduction="Three studies in shape, surface, and atmosphere. Each collection offers a distinct material logic while remaining open enough to mix across the house."
       entries={catalog.collections.map((collection) => ({
         href: `/collections/${collection.slug}`,
+        kind: "collection" as const,
+        slug: collection.slug,
         title: collection.name,
         description: collection.shortDescription,
-        image: collection.media[0],
+        image: collection.media.find((image) => image.role === "hero") ?? collection.media[0],
         kicker: collection.seasonLabel,
       }))}
     />

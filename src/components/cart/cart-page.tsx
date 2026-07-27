@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
@@ -36,6 +36,31 @@ export function CartLoadingShell() {
 export function CartPage() {
   const cart = useCart();
   const [announcement, setAnnouncement] = useState("");
+  const cartTitleRef = useRef<HTMLHeadingElement>(null);
+  const emptyHeadingRef = useRef<HTMLHeadingElement>(null);
+  const pendingFocusRef = useRef<string[] | null>(null);
+  const lineSignature = cart.lines.map((line) => line.variantId).join("|");
+
+  useLayoutEffect(() => {
+    const candidateIds = pendingFocusRef.current;
+    if (candidateIds === null) return;
+    pendingFocusRef.current = null;
+
+    const frame = window.requestAnimationFrame(() => {
+      for (const variantId of candidateIds) {
+        const nextControl =
+          document.getElementById(`remove-${variantId}`) ??
+          document.getElementById(`quantity-${variantId}`);
+        if (nextControl instanceof HTMLElement) {
+          nextControl.focus();
+          return;
+        }
+      }
+      (emptyHeadingRef.current ?? cartTitleRef.current)?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [lineSignature]);
 
   if (cart.status === "loading") return <CartLoadingShell />;
 
@@ -45,7 +70,7 @@ export function CartPage() {
 
       <section className={styles.header} aria-labelledby="cart-title">
         <div>
-          <h1 id="cart-title">Your selections</h1>
+          <h1 id="cart-title" ref={cartTitleRef} tabIndex={-1}>Your selections</h1>
           <p>
             Keep the room in view. A consultant will confirm dimensions,
             finishes, availability, and delivery access before any proposal.
@@ -60,8 +85,11 @@ export function CartPage() {
               className={styles.clear}
               type="button"
               onClick={() => {
+                pendingFocusRef.current = [];
                 if (cart.clear()) {
                   setAnnouncement("All cart selections cleared.");
+                } else {
+                  pendingFocusRef.current = null;
                 }
               }}
             >
@@ -77,7 +105,9 @@ export function CartPage() {
 
       {cart.lines.length === 0 ? (
         <section className={styles.empty} aria-labelledby="empty-cart-title">
-          <h2 id="empty-cart-title">Nothing is set aside yet.</h2>
+          <h2 id="empty-cart-title" ref={emptyHeadingRef} tabIndex={-1}>
+            Nothing is set aside yet.
+          </h2>
           <p>
             Add pieces while browsing, then return here to review the room as a
             whole before requesting guidance.
@@ -96,7 +126,7 @@ export function CartPage() {
               Cart items
             </h2>
             <ul className={styles.lines}>
-              {cart.lines.map((line) => (
+              {cart.lines.map((line, index) => (
                 <li className={styles.lineItem} key={line.variantId}>
                   <CartLineItem
                     line={line}
@@ -113,8 +143,19 @@ export function CartPage() {
                       );
                     }}
                     onRemove={() => {
-                      cart.removeItem(line.variantId);
-                      setAnnouncement(`${line.product.name} removed from cart.`);
+                      pendingFocusRef.current = [
+                        cart.lines[index + 1]?.variantId,
+                        cart.lines[index - 1]?.variantId,
+                      ].filter((variantId): variantId is string => Boolean(variantId));
+                      if (cart.removeItem(line.variantId)) {
+                        setAnnouncement(
+                          `${line.product.name}, SKU ${line.variant.sku}, removed from cart.`,
+                        );
+                      } else {
+                        setAnnouncement(
+                          `${line.product.name}, SKU ${line.variant.sku}, was already removed from cart.`,
+                        );
+                      }
                     }}
                   />
                 </li>

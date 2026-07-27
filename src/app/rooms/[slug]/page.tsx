@@ -24,7 +24,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
   const headingId = `room-${room.slug}-products`;
 
   return (
-    <EditorialDetail title={room.name} description={room.description} parentHref="/rooms" parentLabel="Rooms" media={room.media}>
+    <EditorialDetail title={room.name} description={room.description} parentHref="/rooms" parentLabel="Rooms" kind="room" slug={room.slug} media={room.media}>
       <EditorialProductSection title="Pieces for the room" products={products} id={headingId} />
     </EditorialDetail>
   );

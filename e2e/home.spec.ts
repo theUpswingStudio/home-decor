@@ -85,10 +85,15 @@ test("mobile menu supports keyboard open, focus containment, Escape, and focus r
   await expect(page.locator('.site-header__utility-link[aria-label="Search"]')).toHaveAttribute("inert", "");
   const firstLink = dialog.getByRole("link").first();
   await expect(firstLink).toBeFocused();
+  const closeButton = dialog.getByRole("button", { name: "Close menu" });
+  await expect(closeButton).toBeVisible();
+  await expect(trigger).toHaveAttribute("inert", "");
 
   await dialog.getByRole("link").last().focus();
   await page.keyboard.press("Tab");
-  await expect(trigger).toBeFocused();
+  await expect(closeButton).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(dialog.getByRole("link").last()).toBeFocused();
 
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog", { name: "Main menu" })).toHaveCount(0);
@@ -97,6 +102,65 @@ test("mobile menu supports keyboard open, focus containment, Escape, and focus r
   await expect(page.locator(".site-header .site-wordmark")).not.toHaveAttribute("inert", "");
   await expect(page.locator('.site-header__utility-link[aria-label="Search"]')).not.toHaveAttribute("inert", "");
   await expect(page.locator("body")).not.toHaveAttribute("style", /overflow:\s*hidden/);
+
+  await trigger.click();
+  await page.getByRole("dialog", { name: "Main menu" }).getByRole("button", { name: "Close menu" }).click();
+  await expect(page.getByRole("dialog", { name: "Main menu" })).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+});
+
+test("mobile menu stays closed across history changes and does not reclaim route focus", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, "Mobile navigation is only rendered at the mobile breakpoint.");
+  await page.goto("/shop");
+  await page.getByRole("button", { name: "Filters", exact: true }).click();
+  const filterDialog = page.getByRole("dialog", { name: "Filter products" });
+  await filterDialog.getByRole("searchbox", { name: "Search the catalog" }).fill("desk");
+  await filterDialog.getByRole("button", { name: "Update results" }).click();
+  await expect(page).toHaveURL(/query=desk/);
+
+  const trigger = page.locator(
+    'button[aria-controls="mobile-navigation-panel"]',
+  );
+  await trigger.click();
+  await expect(page.getByRole("dialog", { name: "Main menu" })).toBeVisible();
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/shop$/);
+  await expect(page.getByRole("dialog", { name: "Main menu" })).toHaveCount(0);
+
+  await trigger.click();
+  await page
+    .getByRole("dialog", { name: "Main menu" })
+    .getByRole("link", { name: "Rooms" })
+    .click();
+  await expect(page).toHaveURL(/\/rooms$/);
+
+  await trigger.click();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/shop$/);
+  await expect(page.getByRole("dialog", { name: "Main menu" })).toHaveCount(0);
+  await page.goForward();
+  await expect(page).toHaveURL(/\/rooms$/);
+  await expect(page.getByRole("dialog", { name: "Main menu" })).toHaveCount(0);
+
+  await trigger.click();
+  await page
+    .getByRole("dialog", { name: "Main menu" })
+    .getByRole("link", { name: "Rooms" })
+    .click();
+  await expect(page).toHaveURL(/\/rooms$/);
+  await expect(trigger).toBeFocused();
+
+  await trigger.click();
+  await page
+    .getByRole("dialog", { name: "Main menu" })
+    .getByRole("link", { name: "Shop" })
+    .click();
+  await expect(page).toHaveURL(/\/shop$/);
+  await expect(trigger).not.toBeFocused();
 });
 
 test("homepage hero stacks at 768px", async ({ page }) => {

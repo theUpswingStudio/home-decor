@@ -45,10 +45,16 @@
   text-decoration: none;
 }
 
+.entryMedia {
+  width: 100%;
+  overflow: clip;
+  aspect-ratio: 19 / 13;
+  background: var(--image-stage);
+}
+
 .entryImage {
   width: 100%;
-  height: auto;
-  aspect-ratio: 19 / 13;
+  height: 100%;
   object-fit: cover;
 }
 
@@ -125,19 +131,26 @@
   margin: 0;
 }
 
-.heroImage,
-.detailImage {
+.heroMedia,
+.detailMedia {
   width: 100%;
-  height: auto;
-  object-fit: cover;
+  overflow: clip;
+  background: var(--image-stage);
 }
 
-.heroImage {
+.heroMedia {
   aspect-ratio: 19 / 13;
 }
 
-.detailImage {
+.detailMedia {
   aspect-ratio: 15 / 11;
+}
+
+.heroImage,
+.detailImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .notes {

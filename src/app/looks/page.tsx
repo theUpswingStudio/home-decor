@@ -15,9 +15,11 @@ export default function LooksPage() {
       introduction="Not finished rooms to reproduce, but useful positions to take: four ways to control proportion, contrast, material, and color across a home."
       entries={catalog.looks.map((look) => ({
         href: `/looks/${look.slug}`,
+        kind: "look" as const,
+        slug: look.slug,
         title: look.name,
         description: look.description,
-        image: look.media[0],
+        image: look.media.find((image) => image.role === "hero") ?? look.media[0],
         kicker: look.eyebrow,
       }))}
     />

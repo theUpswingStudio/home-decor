@@ -5,6 +5,7 @@ import {
   type FormEvent,
   type ReactNode,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   useTransition,
@@ -81,7 +82,14 @@ function FilterForm({
       ))}
       <div className={styles.formActions}>
         <button className={styles.submitButton} type="submit">Update results</button>
-        <button className={styles.clearButton} type="button" onClick={onClear}>Clear all</button>
+        <button
+          className={styles.clearButton}
+          type="button"
+          data-filter-clear="true"
+          onClick={onClear}
+        >
+          Clear all
+        </button>
       </div>
     </form>
   );
@@ -97,6 +105,10 @@ interface ShopFiltersProps {
 
 const filterKeys: readonly (CatalogFilterKey | "query")[] = ["category", "room", "material", "style", "type", "price", "query"];
 
+function filterChipId(key: CatalogFilterKey | "query", value: string) {
+  return `filter-chip-${key}-${encodeURIComponent(value)}`;
+}
+
 interface FilterDialogSnapshot {
   selected: ActiveCatalogValues;
   query: string;
@@ -104,12 +116,20 @@ interface FilterDialogSnapshot {
   queryDirty: boolean;
 }
 
+function setBodyOverflow(value: string) {
+  document.body.style.overflow = value;
+}
+
 export function ShopFilters({ groups, initialValues, initialSort, resultCount, children }: ShopFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const resultsHeadingRef = useRef<HTMLHeadingElement>(null);
+  const pendingFocusRef = useRef<string[] | null>(null);
+  const focusedChipRef = useRef<{ id: string; index: number } | null>(null);
   const bodyOverflowRef = useRef<string | null>(null);
   const selectionDirtyRef = useRef(false);
   const queryDirtyRef = useRef(false);
@@ -125,6 +145,14 @@ export function ShopFilters({ groups, initialValues, initialSort, resultCount, c
   useEffect(() => {
     if (previousInitialSignatureRef.current === initialSignature) return;
     previousInitialSignatureRef.current = initialSignature;
+    if (dialogRef.current?.open) {
+      dialogSnapshotRef.current = {
+        selected: initialValues,
+        query: initialValues.query[0] ?? "",
+        selectionDirty: false,
+        queryDirty: false,
+      };
+    }
     if (!selectionDirtyRef.current) setSelected(initialValues);
     if (!queryDirtyRef.current) setQuery(initialValues.query[0] ?? "");
     setSort(initialSort);
@@ -198,7 +226,7 @@ export function ShopFilters({ groups, initialValues, initialSort, resultCount, c
     };
     dialogAppliedRef.current = false;
     bodyOverflowRef.current = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    setBodyOverflow("hidden");
     dialog.showModal();
   }
 
@@ -217,7 +245,7 @@ export function ShopFilters({ groups, initialValues, initialSort, resultCount, c
     dialogSnapshotRef.current = null;
     dialogAppliedRef.current = false;
     if (bodyOverflowRef.current !== null) {
-      document.body.style.overflow = bodyOverflowRef.current;
+      setBodyOverflow(bodyOverflowRef.current);
       bodyOverflowRef.current = null;
     }
     window.requestAnimationFrame(() => triggerRef.current?.focus());
@@ -229,10 +257,62 @@ export function ShopFilters({ groups, initialValues, initialSort, resultCount, c
     value,
     label: key === "query" ? `Search: “${value}”` : labelByValue.get(`${key}:${value}`) ?? value,
   })));
+  const chipIdsSignature = chips
+    .map((chip) => filterChipId(chip.key, chip.value))
+    .join("|");
   const productLabel = `${resultCount} ${resultCount === 1 ? "product" : "products"}`;
 
+  useLayoutEffect(() => {
+    let candidateIds = pendingFocusRef.current;
+    const focusedChip = focusedChipRef.current;
+    if (
+      candidateIds === null &&
+      focusedChip &&
+      !document.getElementById(focusedChip.id)
+    ) {
+      const activeElement = document.activeElement;
+      if (
+        activeElement === null ||
+        activeElement === document.body ||
+        activeElement === document.documentElement
+      ) {
+        const chipIds = chipIdsSignature ? chipIdsSignature.split("|") : [];
+        candidateIds = [
+          chipIds[focusedChip.index],
+          chipIds[focusedChip.index - 1],
+        ].filter((id): id is string => id !== undefined);
+      }
+      focusedChipRef.current = null;
+    }
+    if (candidateIds === null) return;
+    pendingFocusRef.current = null;
+    focusedChipRef.current = null;
+
+    const frame = window.requestAnimationFrame(() => {
+      const isVisible = (element: HTMLElement | null | undefined): element is HTMLElement =>
+        Boolean(element && element.getClientRects().length > 0);
+      const candidate = candidateIds
+        .map((id) => document.getElementById(id))
+        .find(isVisible);
+      if (candidate) {
+        candidate.focus();
+        return;
+      }
+
+      const clearControl = Array.from(
+        shellRef.current?.querySelectorAll<HTMLElement>("[data-filter-clear]") ?? [],
+      ).find(isVisible);
+      const fallback = [clearControl, triggerRef.current, resultsHeadingRef.current].find(
+        isVisible,
+      );
+      fallback?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [chipIdsSignature]);
+
   return (
-    <div className={styles.shell}>
+    <div className={styles.shell} ref={shellRef}>
       <div className={styles.toolbar}>
         <button
           className={styles.filterTrigger}
@@ -268,12 +348,23 @@ export function ShopFilters({ groups, initialValues, initialSort, resultCount, c
 
       {chips.length > 0 ? (
         <ul className={styles.chips} aria-label="Applied filters">
-          {chips.map((chip) => (
+          {chips.map((chip, index) => (
             <li key={`${chip.key}-${chip.value}`}>
               <button
+                id={filterChipId(chip.key, chip.value)}
                 className={styles.chip}
                 type="button"
+                data-filter-chip="true"
+                onFocus={() => {
+                  focusedChipRef.current = {
+                    id: filterChipId(chip.key, chip.value),
+                    index,
+                  };
+                }}
                 onClick={() => {
+                  pendingFocusRef.current = [chips[index + 1], chips[index - 1]]
+                    .filter((candidate) => candidate !== undefined)
+                    .map((candidate) => filterChipId(candidate.key, candidate.value));
                   if (chip.key === "query") {
                     setQuery("");
                     const next = { ...selected, query: [] };
@@ -290,7 +381,19 @@ export function ShopFilters({ groups, initialValues, initialSort, resultCount, c
               </button>
             </li>
           ))}
-          <li><button className={styles.clearButton} type="button" onClick={clearAll}>Clear all</button></li>
+          <li>
+            <button
+              className={styles.clearButton}
+              type="button"
+              data-filter-clear="true"
+              onClick={() => {
+                pendingFocusRef.current = [];
+                clearAll();
+              }}
+            >
+              Clear all
+            </button>
+          </li>
         </ul>
       ) : null}
 
@@ -311,6 +414,9 @@ export function ShopFilters({ groups, initialValues, initialSort, resultCount, c
           />
         </aside>
         <section className={styles.results} id="catalog-results" aria-busy={isPending} aria-label={productLabel}>
+          <h2 className="sr-only" ref={resultsHeadingRef} tabIndex={-1}>
+            Catalog results
+          </h2>
           {children}
         </section>
       </div>

@@ -42,8 +42,8 @@
 }
 
 .lookControl[aria-current="true"] {
-  border-color: var(--ink);
-  background: var(--ink);
+  border-color: var(--moss);
+  background: var(--moss);
   color: var(--surface);
 }
 
@@ -80,7 +80,8 @@
   display: grid;
   gap: clamp(1.5rem, 3vw, 3rem);
   padding: clamp(1.25rem, 3vw, 3rem);
-  border: 1px solid var(--line-decorative);
+  overflow: clip;
+  border: 1px solid var(--card-border);
   border-radius: var(--radius-small);
   background: var(--surface);
   box-shadow: var(--card-shadow);
@@ -130,7 +131,7 @@
   position: relative;
   overflow: hidden;
   aspect-ratio: 4 / 3;
-  background: var(--line-decorative);
+  background: var(--image-stage);
 }
 
 .lookImage {

@@ -96,7 +96,7 @@
 .materialImageFrame {
   position: relative;
   overflow: hidden;
-  background: var(--line-decorative);
+  background: var(--image-stage);
 }
 
 .roomImageFrame {
@@ -161,7 +161,8 @@
 .roomPreview {
   min-width: 0;
   height: 100%;
-  border: 1px solid var(--line-decorative);
+  overflow: clip;
+  border: 1px solid var(--card-border);
   border-radius: var(--radius-small);
   background: var(--surface);
   box-shadow: var(--card-shadow);
@@ -386,7 +387,7 @@
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: clamp(1.5rem, 3vw, 3rem);
   padding: clamp(1.5rem, 4vw, 4rem);
-  border: 1px solid var(--line-decorative);
+  border: 1px solid var(--card-border);
   border-radius: var(--radius-small);
   background: var(--surface);
   box-shadow: var(--card-shadow);

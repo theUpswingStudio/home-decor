@@ -15,9 +15,11 @@ export default function RoomsPage() {
       introduction="Begin with how the room needs to work. Each edit balances anchor pieces, circulation, light, storage, and the quieter layers that make a space feel lived in."
       entries={catalog.rooms.map((room) => ({
         href: `/rooms/${room.slug}`,
+        kind: "room" as const,
+        slug: room.slug,
         title: room.name,
         description: room.shortDescription,
-        image: room.media[0],
+        image: room.media.find((image) => image.role === "hero") ?? room.media[0],
       }))}
     />
   );

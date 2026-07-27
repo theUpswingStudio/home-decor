@@ -4,6 +4,7 @@ import { BreadcrumbTrail } from "@/components/catalog/breadcrumb-trail";
 import { ProductGallery } from "@/components/catalog/product-gallery";
 import { ProductGrid } from "@/components/catalog/product-grid";
 import { VariantSelector, type VariantChoice } from "@/components/catalog/variant-selector";
+import { sharedMediaTransitionType } from "@/components/motion/shared-media-transition";
 import {
   createBreadcrumbJsonLd,
   JsonLd,
@@ -76,10 +77,19 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const deliveryPolicy = catalog.policies.find((policy) => policy.slug === "shipping-delivery");
   const relatedProducts = getRelatedProducts(product, 4);
   const overall = product.dimensions.overall;
+  const reverseTransitionTypes = [
+    sharedMediaTransitionType("product", product.slug),
+  ];
   const breadcrumbItems = [
     { href: "/", label: "Home" },
-    { href: "/shop", label: "Shop" },
-    ...(category ? [{ href: `/shop/${category.slug}`, label: category.name }] : []),
+    { href: "/shop", label: "Shop", transitionTypes: reverseTransitionTypes },
+    ...(category
+      ? [{
+          href: `/shop/${category.slug}`,
+          label: category.name,
+          transitionTypes: reverseTransitionTypes,
+        }]
+      : []),
     { label: product.name },
   ];
   const structuredBreadcrumbs = [
@@ -102,7 +112,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <BreadcrumbTrail items={breadcrumbItems} />
 
         <div className={styles.productLayout}>
-          <ProductGallery images={product.images} productName={product.name} />
+          <ProductGallery
+            images={product.images}
+            productName={product.name}
+            productSlug={product.slug}
+          />
           <section className={styles.summary} aria-labelledby="product-title">
             {category ? <p className={styles.category}>{category.name}</p> : null}
             <h1 className={styles.title} id="product-title">{product.name}</h1>
@@ -223,7 +237,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <div className={styles.relatedHeader}>
             <h2 className={styles.sectionTitle} id="related-title">Consider with</h2>
           </div>
-          <ProductGrid products={relatedProducts} labelledBy="related-title" />
+          <ProductGrid
+            products={relatedProducts}
+            labelledBy="related-title"
+            sharedMedia={false}
+          />
         </section>
         </Container>
       </div>
