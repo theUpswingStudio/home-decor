@@ -89,7 +89,7 @@
   white-space: nowrap;
 }
 
-@media (max-width: 48rem) {
+@media (max-width: 23.99rem) {
   .imageFrame {
     height: clamp(12rem, 60vw, 17rem);
     aspect-ratio: auto;

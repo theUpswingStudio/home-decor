@@ -243,27 +243,35 @@ test("mobile hero title stays on two lines without horizontal overflow", async (
   expect(horizontalOverflow).toBeLessThanOrEqual(1);
 });
 
-test("look carousel exposes all catalog looks and stops at its boundaries", async ({
+test("look carousel exposes named looks and keeps only the selected look operable", async ({
   page,
 }) => {
   await page.goto("/");
 
   const carousel = page.getByRole("region", { name: "Collected looks" });
   const lookControls = carousel.getByRole("group", { name: "Choose a look" });
-  const previous = carousel.getByRole("button", { name: "Previous" });
-  const next = carousel.getByRole("button", { name: "Next" });
   const status = carousel.locator('[aria-live="polite"]');
 
   await expect(lookControls.getByRole("button")).toHaveText([
-    "Look 1",
-    "Look 2",
-    "Look 3",
-    "Look 4",
+    "Warm Monolith",
+    "Gallery Calm",
+    "Tailored Contrast",
+    "Quiet Color",
   ]);
-  await expect(previous).toBeDisabled();
-  await expect(next).toBeEnabled();
+  expect(
+    await lookControls
+      .getByRole("button")
+      .evaluateAll((buttons) =>
+        buttons.map((button) => button.getAttribute("aria-controls")),
+      ),
+  ).toEqual(["look-slide-1", "look-slide-2", "look-slide-3", "look-slide-4"]);
+  await expect(
+    lookControls.getByRole("button", { name: "Warm Monolith" }),
+  ).toHaveAttribute("aria-current", "true");
   await expect(carousel.locator('#look-slide-1')).not.toHaveAttribute("inert", "");
+  await expect(carousel.locator('#look-slide-1')).toHaveAttribute("aria-hidden", "false");
   await expect(carousel.locator('#look-slide-2')).toHaveAttribute("inert", "");
+  await expect(carousel.locator('#look-slide-2')).toHaveAttribute("aria-hidden", "true");
 
   const completeLookLinks = carousel.locator("a").filter({
     hasText: "View the complete look",
@@ -275,24 +283,32 @@ test("look carousel exposes all catalog looks and stops at its boundaries", asyn
     "/looks/quiet-color",
   ]);
 
-  await lookControls.getByRole("button", { name: "Look 4" }).click();
-  await expect(status).toHaveText("Showing Look 4 of 4: Quiet Color");
-  await expect(lookControls.getByRole("button", { name: "Look 4" })).toHaveAttribute(
+  const galleryCalm = lookControls.getByRole("button", { name: "Gallery Calm" });
+  await galleryCalm.focus();
+  await page.keyboard.press("Enter");
+  await expect(status).toHaveText("Showing look 2 of 4: Gallery Calm");
+  await expect(galleryCalm).toHaveAttribute("aria-current", "true");
+  await expect(carousel.locator('#look-slide-1')).toHaveAttribute("inert", "");
+  await expect(carousel.locator('#look-slide-2')).not.toHaveAttribute("inert", "");
+
+  const quietColor = lookControls.getByRole("button", { name: "Quiet Color" });
+  await quietColor.click();
+  await expect(status).toHaveText("Showing look 4 of 4: Quiet Color");
+  await expect(quietColor).toHaveAttribute(
     "aria-current",
     "true",
   );
-  await expect(next).toBeDisabled();
-  await expect(previous).toBeEnabled();
   await expect(carousel.locator('#look-slide-3')).toHaveAttribute("inert", "");
   await expect(carousel.locator('#look-slide-4')).not.toHaveAttribute("inert", "");
+  await expect(carousel.locator('#look-slide-4')).toHaveAttribute("aria-hidden", "false");
 
-  await previous.click();
-  await expect(status).toHaveText("Showing Look 3 of 4: Tailored Contrast");
-  await expect(next).toBeEnabled();
-
-  await lookControls.getByRole("button", { name: "Look 1" }).click();
-  await expect(status).toHaveText("Showing Look 1 of 4: Warm Monolith");
-  await expect(previous).toBeDisabled();
+  const warmMonolith = lookControls.getByRole("button", { name: "Warm Monolith" });
+  await warmMonolith.click();
+  await expect(status).toHaveText("Showing look 1 of 4: Warm Monolith");
+  await expect(warmMonolith).toHaveAttribute("aria-current", "true");
+  await expect(quietColor).not.toHaveAttribute("aria-current", "true");
+  await expect(carousel.locator('#look-slide-1')).not.toHaveAttribute("inert", "");
+  await expect(carousel.locator('#look-slide-4')).toHaveAttribute("inert", "");
 });
 
 test("editorial home sections use deliberate responsive grids without overflow", async ({

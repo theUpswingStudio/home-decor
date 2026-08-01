@@ -54,13 +54,17 @@ export function LookCarousel({ labels, children }: LookCarouselProps) {
     const slide = track?.children.item(index) as HTMLElement | null;
     if (!track || !slide) return;
 
+    if (settleTimerRef.current !== null) {
+      window.clearTimeout(settleTimerRef.current);
+    }
+
+    setActiveIndex(index);
+
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     track.scrollTo({
       left: slide.offsetLeft,
       behavior: reducedMotion ? "auto" : "smooth",
     });
-
-    if (reducedMotion) setActiveIndex(index);
   }
 
   const activeLabel = labels[activeIndex] ?? labels[0] ?? "Look";
@@ -83,27 +87,9 @@ export function LookCarousel({ labels, children }: LookCarouselProps) {
               aria-current={index === activeIndex ? "true" : undefined}
               onClick={() => showSlide(index)}
             >
-              Look {index + 1}
+              {label}
             </button>
           ))}
-        </div>
-        <div className={styles.stepControls} role="group" aria-label="Move through looks">
-          <button
-            className={styles.stepControl}
-            type="button"
-            disabled={activeIndex === 0}
-            onClick={() => showSlide(activeIndex - 1)}
-          >
-            Previous
-          </button>
-          <button
-            className={styles.stepControl}
-            type="button"
-            disabled={activeIndex === slides.length - 1}
-            onClick={() => showSlide(activeIndex + 1)}
-          >
-            Next
-          </button>
         </div>
       </div>
 
@@ -130,7 +116,7 @@ export function LookCarousel({ labels, children }: LookCarouselProps) {
       </div>
 
       <p className="sr-only" aria-live="polite" aria-atomic="true">
-        Showing Look {activeIndex + 1} of {slides.length}: {activeLabel}
+        Showing look {activeIndex + 1} of {slides.length}: {activeLabel}
       </p>
     </div>
   );

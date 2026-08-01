@@ -16,6 +16,7 @@
   --line-decorative: #d4cec2;
   --card-border: #d8d0c3;
   --image-stage: #e9e3d8;
+  --mobile-navigation-backdrop: rgb(31 33 29 / 42%);
   --card-shadow: 0 1px 2px rgba(85, 58, 38, 0.035), 0 4px 12px rgba(85, 58, 38, 0.02);
   --motion-shared-media: 420ms;
   --ease-material: cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -390,6 +391,7 @@ p {
 .site-header__utility-link {
   position: relative;
   display: inline-flex;
+  min-width: 2.75rem;
   min-height: 3rem;
   align-items: center;
   justify-content: center;
@@ -474,7 +476,8 @@ p {
   position: fixed;
   inset: var(--site-header-height) 0 0;
   z-index: 44;
-  background: rgb(31 33 29 / 42%);
+  background: var(--mobile-navigation-backdrop);
+  background: color-mix(in srgb, var(--ink) 42%, transparent);
 }
 
 .mobile-navigation__panel {
@@ -592,6 +595,7 @@ p {
 
 .site-footer__link {
   display: inline-flex;
+  min-width: 2.75rem;
   min-height: 3rem;
   align-items: center;
   color: var(--line-decorative);
@@ -635,6 +639,7 @@ p {
 
 .site-footer__legal-link {
   display: inline-flex;
+  min-width: 2.75rem;
   min-height: 3rem;
   align-items: center;
   color: inherit;

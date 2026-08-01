@@ -33,10 +33,10 @@ const featuredPlacements = [
 ];
 
 const roomPlacements = [
-  { className: styles.roomLiving, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), 55vw" },
-  { className: styles.roomDining, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), 39vw" },
-  { className: styles.roomBedroom, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), 31vw" },
-  { className: styles.roomWorkspace, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), 62vw" },
+  { className: styles.roomLiving, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), (max-width: 1400px) 65vw, 900px" },
+  { className: styles.roomDining, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), (max-width: 1400px) 57.5vw, 820px" },
+  { className: styles.roomBedroom, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), (max-width: 1400px) 57.5vw, 820px" },
+  { className: styles.roomWorkspace, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), (max-width: 1400px) 56.5vw, 820px" },
 ];
 
 function getPrimaryImage(images: readonly CatalogImage[]): CatalogImage {
@@ -174,9 +174,9 @@ export function HomePage() {
             </h1>
             <p className={styles.heroSupport}>{catalog.site.positioning}</p>
             <div className={styles.heroActions}>
-              <ButtonLink href="/shop">Shop furniture</ButtonLink>
-              <Link className={styles.quietLink} href="/design-services/inquire">
-                Design consultation
+              <ButtonLink href="/design-services/inquire">Plan your room</ButtonLink>
+              <Link className={styles.quietLink} href="/shop">
+                Explore furniture
                 <ArrowRightIcon size={18} weight="regular" aria-hidden="true" />
               </Link>
             </div>
@@ -189,7 +189,7 @@ export function HomePage() {
                 src={heroImage.url}
                 alt={heroImage.alt}
                 fill
-                sizes="(max-width: 768px) calc(100vw - 2rem), (max-width: 1439px) 52vw, 760px"
+                sizes="(min-width: 768px) and (max-height: 688px) 800px, (max-width: 544px) 165vw, (max-width: 768px) 140vw, (max-width: 1024px) 125vw, 1280px"
                 loading="eager"
                 fetchPriority="high"
               />
@@ -201,7 +201,7 @@ export function HomePage() {
                   src={heroDetail.url}
                   alt={heroDetail.alt}
                   fill
-                  sizes="(max-width: 768px) 1px, 10vw"
+                  sizes="(max-width: 704px) 1px, (max-width: 1024px) 640px, 700px"
                 />
               </div>
             ) : null}
@@ -234,14 +234,14 @@ export function HomePage() {
       <section className={styles.featuredSection} aria-labelledby="featured-title">
         <Container>
           <div className={styles.featuredIntro}>
-            <div className={styles.sectionIntro}>
-              <h2 id="featured-title">The considered edit</h2>
+            <h2 id="featured-title">The considered edit</h2>
+            <div className={styles.featuredSupport}>
               <p>Six pieces chosen for proportion, material presence, and life across rooms.</p>
+              <Link className={styles.textLink} href="/shop">
+                View all furniture
+                <ArrowRightIcon size={18} weight="regular" aria-hidden="true" />
+              </Link>
             </div>
-            <Link className={styles.textLink} href="/shop">
-              View all furniture
-              <ArrowRightIcon size={18} weight="regular" aria-hidden="true" />
-            </Link>
           </div>
           <div className={styles.productGrid}>
             {featuredProducts.map((product, index) => {
@@ -315,11 +315,11 @@ export function HomePage() {
             {catalog.looks.map((look) => {
               const lookImage = getPrimaryImage(look.media);
               const lookProducts = getProductsByLook(look);
+              const previewProducts = lookProducts.slice(0, 4);
 
               return (
                 <article className={carouselStyles.lookCard} key={look.id}>
                   <header className={carouselStyles.lookHeader}>
-                    <p className={carouselStyles.lookEyebrow}>{look.eyebrow}</p>
                     <h2 className={carouselStyles.lookTitle}>{look.name}</h2>
                     <p className={carouselStyles.lookDescription}>{look.description}</p>
                   </header>
@@ -346,7 +346,7 @@ export function HomePage() {
                     </figure>
                     <div className={carouselStyles.lookProducts}>
                       <ol>
-                        {lookProducts.map((product, index) => (
+                        {previewProducts.map((product, index) => (
                           <li key={product.id}>
                             <Link href={`/products/${product.slug}`} prefetch={false}>
                               <span className={carouselStyles.lookIndex} aria-hidden="true">
@@ -387,7 +387,10 @@ export function HomePage() {
               <p>
                 A consultant will shape an edited furniture plan, confirm fit, and prepare a transparent proposal.
               </p>
-              <ButtonLink href="/design-services/inquire">
+              <ButtonLink
+                className={styles.consultationButton}
+                href="/design-services/inquire"
+              >
                 {catalog.site.primaryCtaLabel}
               </ButtonLink>
             </div>
