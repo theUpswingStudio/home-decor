@@ -1,0 +1,186 @@
+.editorialIndex {
+  display: grid;
+  gap: var(--space-24);
+}
+
+.chapter {
+  display: grid;
+  gap: var(--space-10);
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto 90rem;
+}
+
+.chapterLead {
+  display: grid;
+  gap: var(--space-8);
+}
+
+.roomCard,
+.materialCard {
+  min-width: 0;
+}
+
+.mediaLink {
+  display: block;
+  overflow: hidden;
+  background: var(--image-stage);
+}
+
+.roomImage,
+.materialImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.roomImage {
+  aspect-ratio: 16 / 10;
+}
+
+.materialImage {
+  aspect-ratio: 4 / 3;
+}
+
+.roomCopy,
+.materialCopy {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--ink);
+}
+
+.typeLabel {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.roomCopy h2,
+.materialCopy h2 {
+  margin: 0;
+  font-size: clamp(2rem, 4.5vw, 3.8rem);
+  font-weight: 450;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+.materialCopy h2 {
+  font-size: clamp(1.75rem, 3vw, 2.75rem);
+}
+
+.roomCopy h2 a,
+.materialCopy h2 a {
+  text-decoration: none;
+}
+
+.roomCopy > p:not(.typeLabel),
+.materialCopy > p:not(.typeLabel) {
+  max-width: 52rem;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.entryFacts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: var(--space-2) 0;
+}
+
+.entryFacts dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.entryFacts dd {
+  margin: var(--space-1) 0 0;
+  font-size: 0.875rem;
+}
+
+.palette {
+  font-size: 0.8125rem;
+}
+
+.chapterProducts {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.productHeading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.productHeading h2 {
+  margin: 0;
+  font-family: var(--font-geist), sans-serif;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.productHeading a,
+.completeCatalog a {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+
+.completeCatalog {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-block: var(--space-8);
+  border-block: 1px solid var(--ink);
+}
+
+.completeCatalog p {
+  margin: 0;
+  font-family: var(--font-newsreader), serif;
+  font-size: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.resultGrid {
+  display: grid;
+  gap: var(--space-12) var(--space-6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resultGrid > li {
+  min-width: 0;
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto 34rem;
+}
+
+@media (min-width: 48rem) {
+  .resultGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .chapterLead {
+    grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
+    gap: var(--space-8);
+    align-items: start;
+  }
+
+  .materialCard {
+    padding-top: var(--space-16);
+  }
+
+  .resultGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

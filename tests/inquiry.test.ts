@@ -23,6 +23,7 @@ const submission: InquirySubmission = {
   context: {
     source: "direct",
     selectedItems: [],
+    selectedEntries: [],
   },
 };
 
@@ -41,7 +42,7 @@ describe("inquiry contract", () => {
     expect(catalog.inquiry).not.toHaveProperty("contactPreferenceOptions");
   });
 
-  it("preserves variant IDs and quantities only for cart context", () => {
+  it("preserves configured products and typed entries for Project Edit", () => {
     const items = [
       { variantId: "variant-a", quantity: 2 },
       { variantId: "variant-b", quantity: 1 },
@@ -50,10 +51,21 @@ describe("inquiry contract", () => {
     expect(buildInquiryContext("cart", items)).toEqual({
       source: "cart",
       selectedItems: items,
+      selectedEntries: [],
+    });
+    const entries = [
+      { type: "room" as const, roomId: "room-a" },
+      { type: "material" as const, collectionId: "collection-a" },
+    ];
+    expect(buildInquiryContext("project-edit", items, entries)).toEqual({
+      source: "project-edit",
+      selectedItems: items,
+      selectedEntries: entries,
     });
     expect(buildInquiryContext("direct", items)).toEqual({
       source: "direct",
       selectedItems: [],
+      selectedEntries: [],
     });
   });
 

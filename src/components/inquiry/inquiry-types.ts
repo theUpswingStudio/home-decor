@@ -1,4 +1,4 @@
-export type InquirySource = "direct" | "cart";
+export type InquirySource = "direct" | "cart" | "project-edit" | "product";
 
 export interface InquirySelectedItem {
   readonly variantId: string;
@@ -8,7 +8,18 @@ export interface InquirySelectedItem {
 export interface InquiryContext {
   readonly source: InquirySource;
   readonly selectedItems: readonly InquirySelectedItem[];
+  readonly selectedEntries: readonly InquirySelectedEntry[];
 }
+
+export type InquirySelectedEntry =
+  | {
+      readonly type: "product";
+      readonly productId: string;
+      readonly variantId?: string;
+      readonly quantity: number;
+    }
+  | { readonly type: "room"; readonly roomId: string }
+  | { readonly type: "material"; readonly collectionId: string };
 
 export interface InquirySubmission {
   readonly version: 1;
@@ -56,13 +67,16 @@ export function isSupportedPostalCode(value: string): boolean {
 export function buildInquiryContext(
   source: InquirySource,
   items: readonly InquirySelectedItem[],
+  selectedEntries: readonly InquirySelectedEntry[] = [],
 ): InquiryContext {
+  const includesProjectEdit = source === "cart" || source === "project-edit";
   return {
     source,
     selectedItems:
-      source === "cart"
+      includesProjectEdit
         ? items.map(({ variantId, quantity }) => ({ variantId, quantity }))
         : [],
+    selectedEntries: includesProjectEdit ? selectedEntries : [],
   };
 }
 

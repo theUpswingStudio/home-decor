@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { InquiryConfig, InquiryOption } from "@/data/catalog";
 import { Button, ButtonLink } from "@/components/ui/button";
-import { useCart } from "@/lib/cart/use-cart";
+import { useProjectEdit } from "@/lib/project-edit";
 import {
   buildInquiryContext,
   demonstrateInquirySubmission,
@@ -15,7 +15,7 @@ import styles from "./inquiry-form.module.css";
 
 interface InquiryFormProps {
   readonly inquiry: InquiryConfig;
-  readonly fromCart: boolean;
+  readonly fromProjectEdit: boolean;
 }
 
 interface FormValues {
@@ -234,32 +234,42 @@ function ErrorSummary({ errors, summaryRef }: ErrorSummaryProps) {
   );
 }
 
-function CartSelectionSummary() {
-  const cart = useCart();
+function ProjectEditSelectionSummary() {
+  const projectEdit = useProjectEdit();
 
   return (
     <section className={styles.cartSelection} aria-labelledby="cart-selection-title">
-      <h2 id="cart-selection-title">Selections from your cart</h2>
-      {cart.status === "loading" ? (
+      <h2 id="cart-selection-title">Selections from your Project Edit</h2>
+      {projectEdit.status === "loading" ? (
         <p aria-live="polite">Loading saved selections…</p>
-      ) : cart.lines.length === 0 ? (
+      ) : projectEdit.entryCount === 0 ? (
         <p>
           There are no current selections to attach. You can continue without
-          them or <Link href="/cart">return to your cart</Link>.
+          them or <Link href="/project-edit">return to Project Edit</Link>.
         </p>
       ) : (
         <ul>
-          {cart.lines.map((line) => (
-            <li key={line.variantId}>
+          {projectEdit.products.map((item) => (
+            <li key={item.key}>
               <span>
-                <strong>{line.product.name}</strong>
+                <strong>{item.product.name}</strong>
                 <span>
-                  {line.variant.options
-                    .map((option) => option.value)
-                    .join(" / ")}
+                  {item.variant
+                    ? item.variant.options.map((option) => option.value).join(" / ")
+                    : "Finish not selected"}
                 </span>
               </span>
-              <span>Qty. {line.quantity}</span>
+              <span>Qty. {item.entry.quantity}</span>
+            </li>
+          ))}
+          {projectEdit.rooms.map((item) => (
+            <li key={item.key}>
+              <span><strong>{item.room.name}</strong><span>Room direction</span></span>
+            </li>
+          ))}
+          {projectEdit.materials.map((item) => (
+            <li key={item.key}>
+              <span><strong>{item.collection.name}</strong><span>Material note</span></span>
             </li>
           ))}
         </ul>
@@ -268,8 +278,8 @@ function CartSelectionSummary() {
   );
 }
 
-export function InquiryForm({ inquiry, fromCart }: InquiryFormProps) {
-  const cart = useCart();
+export function InquiryForm({ inquiry, fromProjectEdit }: InquiryFormProps) {
+  const projectEdit = useProjectEdit();
   const [step, setStep] = useState<1 | 2>(1);
   const [values, setValues] = useState<FormValues>(INITIAL_VALUES);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -305,6 +315,23 @@ export function InquiryForm({ inquiry, fromCart }: InquiryFormProps) {
   }
 
   function buildSubmission(): InquirySubmission {
+    const selectedItems = projectEdit.products.flatMap((item) =>
+      item.variant
+        ? [{ variantId: item.variant.id, quantity: item.entry.quantity }]
+        : [],
+    );
+    const selectedEntries = projectEdit.entries.map((entry) => {
+      if (entry.type === "product") {
+        return {
+          type: "product" as const,
+          productId: entry.productId,
+          ...(entry.variantId ? { variantId: entry.variantId } : {}),
+          quantity: entry.quantity,
+        };
+      }
+      if (entry.type === "room") return { type: "room" as const, roomId: entry.roomId };
+      return { type: "material" as const, collectionId: entry.collectionId };
+    });
     return {
       version: 1,
       project: {
@@ -320,7 +347,11 @@ export function InquiryForm({ inquiry, fromCart }: InquiryFormProps) {
         ...(values.phone.trim() ? { phone: values.phone.trim() } : {}),
         ...(values.notes.trim() ? { notes: values.notes.trim() } : {}),
       },
-      context: buildInquiryContext(fromCart ? "cart" : "direct", cart.items),
+      context: buildInquiryContext(
+        fromProjectEdit ? "project-edit" : "direct",
+        selectedItems,
+        selectedEntries,
+      ),
     };
   }
 
@@ -400,7 +431,7 @@ export function InquiryForm({ inquiry, fromCart }: InquiryFormProps) {
         <p className={styles.response}>{inquiry.responseExpectation}</p>
       </div>
 
-      {fromCart ? <CartSelectionSummary /> : null}
+      {fromProjectEdit ? <ProjectEditSelectionSummary /> : null}
 
       <form className={styles.form} noValidate onKeyDown={handleFormKeyDown}>
         <ErrorSummary errors={errors} summaryRef={errorSummaryRef} />
@@ -583,7 +614,7 @@ export function InquiryForm({ inquiry, fromCart }: InquiryFormProps) {
           ) : null}
           <Button
             type="button"
-            disabled={step === 2 && fromCart && cart.status !== "ready"}
+            disabled={step === 2 && fromProjectEdit && projectEdit.status !== "ready"}
             onClick={advanceInquiry}
           >
             {step === 1 ? "Continue to details" : "Complete demonstration"}

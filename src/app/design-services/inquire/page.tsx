@@ -48,7 +48,7 @@ interface InquiryPageProps {
 
 export default async function InquiryPage({ searchParams }: InquiryPageProps) {
   const params = await searchParams;
-  const fromCart = params.from === "cart";
+  const fromProjectEdit = params.from === "project-edit" || params.from === "cart";
 
   return (
     <Container className={styles.page}>
@@ -59,7 +59,7 @@ export default async function InquiryPage({ searchParams }: InquiryPageProps) {
           { label: "Inquiry" },
         ]}
       />
-      <InquiryForm inquiry={catalog.inquiry} fromCart={fromCart} />
+      <InquiryForm inquiry={catalog.inquiry} fromProjectEdit={fromProjectEdit} />
     </Container>
   );
 }

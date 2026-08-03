@@ -315,11 +315,11 @@ test("editorial home sections use deliberate responsive grids without overflow",
   page,
 }) => {
   const cases = [
-    { width: 390, columns: 1, consultationColumns: 1 },
-    { width: 768, columns: 1, consultationColumns: 1 },
-    { width: 769, columns: 2, consultationColumns: 12 },
-    { width: 1024, columns: 2, consultationColumns: 12 },
-    { width: 1440, columns: 12, consultationColumns: 12 },
+    { width: 390, roomColumns: 1, productColumns: 1, consultationColumns: 1 },
+    { width: 768, roomColumns: 1, productColumns: 1, consultationColumns: 1 },
+    { width: 769, roomColumns: 1, productColumns: 1, consultationColumns: 12 },
+    { width: 1024, roomColumns: 1, productColumns: 1, consultationColumns: 12 },
+    { width: 1440, roomColumns: 12, productColumns: 12, consultationColumns: 12 },
   ];
 
   for (const testCase of cases) {
@@ -329,15 +329,17 @@ test("editorial home sections use deliberate responsive grids without overflow",
     const roomColumns = await page.locator('[class*="roomGrid"]').evaluate((element) =>
       getComputedStyle(element).gridTemplateColumns.split(" ").filter(Boolean),
     );
-    const productColumns = await page.locator('[class*="productGrid"]').evaluate((element) =>
+    const productColumns = await page.locator('[class*="productEditLayout"]').evaluate((element) =>
       getComputedStyle(element).gridTemplateColumns.split(" ").filter(Boolean),
     );
     const consultationColumns = await page.locator('[class*="consultationInner"]').evaluate((element) =>
       getComputedStyle(element).gridTemplateColumns.split(" ").filter(Boolean),
     );
 
-    expect(roomColumns, `${testCase.width}px room grid`).toHaveLength(testCase.columns);
-    expect(productColumns, `${testCase.width}px product grid`).toHaveLength(testCase.columns);
+    expect(roomColumns, `${testCase.width}px room grid`).toHaveLength(testCase.roomColumns);
+    expect(productColumns, `${testCase.width}px product edit`).toHaveLength(
+      testCase.productColumns,
+    );
     expect(consultationColumns, `${testCase.width}px consultation grid`).toHaveLength(
       testCase.consultationColumns,
     );
@@ -352,7 +354,7 @@ test("editorial home sections use deliberate responsive grids without overflow",
   }
 });
 
-test("stretched editorial cards keep media directly joined to their captions", async ({
+test("room chapters and the product edit preserve their editorial structure", async ({
   page,
 }) => {
   for (const width of [769, 1024, 1440, 1707]) {
@@ -361,6 +363,28 @@ test("stretched editorial cards keep media directly joined to their captions", a
 
     const roomCards = page.locator('section[aria-labelledby="rooms-title"] article');
     const productCards = page.locator('section[aria-labelledby="featured-title"] article');
+    await expect(page.getByRole("heading", { name: "Explore by room" })).toBeVisible();
+    await expect(roomCards).toHaveCount(4);
+    await expect(productCards).toHaveCount(6);
+    await expect(
+      page
+        .locator('section[aria-labelledby="featured-title"] [class*="productMetadata"] span')
+        .filter({ hasText: /^Reference image/ }),
+    ).toHaveCount(6);
+    for (const role of [
+      "Room anchor",
+      "Dining anchor",
+      "Counterpoint seat",
+      "Mineral weight",
+      "Deeper lounge option",
+      "Quiet storage",
+    ]) {
+      await expect(
+        page.locator('section[aria-labelledby="featured-title"]').getByText(role, {
+          exact: true,
+        }),
+      ).toBeVisible();
+    }
     const roomGaps = await roomCards
       .evaluateAll((cards) =>
         cards.map((card) => {
@@ -368,15 +392,6 @@ test("stretched editorial cards keep media directly joined to their captions", a
           const caption = card.querySelector('[class*="roomCaption"]');
           if (!image || !caption) return Number.POSITIVE_INFINITY;
           return caption.getBoundingClientRect().top - image.getBoundingClientRect().bottom;
-        }),
-      );
-    const productGaps = await productCards
-      .evaluateAll((cards) =>
-        cards.map((card) => {
-          const image = card.querySelector('[class*="imageFrame"]');
-          const details = card.querySelector('[class*="details"]');
-          if (!image || !details) return Number.POSITIVE_INFINITY;
-          return details.getBoundingClientRect().top - image.getBoundingClientRect().bottom;
         }),
       );
     const roomBoundsViolations = await roomCards.evaluateAll((cards) =>
@@ -486,9 +501,6 @@ test("stretched editorial cards keep media directly joined to their captions", a
 
     expect(roomGaps, `${width}px room media gaps`).toEqual(
       roomGaps.map(() => expect.closeTo(0, 1)),
-    );
-    expect(productGaps, `${width}px product media gaps`).toEqual(
-      productGaps.map(() => expect.closeTo(0, 1)),
     );
     expect(roomBoundsViolations, `${width}px room media bounds`).toEqual([]);
     expect(productBoundsViolations, `${width}px product media bounds`).toEqual([]);

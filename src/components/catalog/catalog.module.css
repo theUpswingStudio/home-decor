@@ -54,14 +54,6 @@
   }
 }
 
-.referenceLabel {
-  grid-column: 1 / -1;
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.75rem;
-  line-height: 1.35;
-}
-
 .title {
   margin: 0;
   font-family: var(--font-geist), sans-serif;
@@ -98,6 +90,39 @@
   color: var(--muted);
   font-size: 0.8125rem;
   line-height: 1.4;
+}
+
+.planningFacts {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-2) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line-decorative);
+}
+
+.planningFacts div {
+  min-width: 0;
+}
+
+.planningFacts dt {
+  color: var(--muted);
+  font-size: 0.6875rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.planningFacts dd {
+  margin: var(--space-1) 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.saveAction {
+  grid-column: 1 / -1;
+  justify-self: start;
+  margin-top: var(--space-1);
 }
 
 @media (min-width: 40rem) {

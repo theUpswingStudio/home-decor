@@ -20,7 +20,7 @@ const QUESTIONS = [
   {
     question: "Can I buy a piece through the site?",
     answer:
-      "No. There is no online checkout. Adding a piece saves a planning selection in your browser; it does not reserve inventory or begin a purchase. In the imagined live service, a consultant would confirm selections and all project costs in a written proposal.",
+      "No. There is no online checkout. Saving a piece to Project Edit keeps a planning selection in your browser. It does not reserve inventory or begin a purchase. In the imagined live service, a consultant would confirm selections and project costs in a written proposal.",
   },
   {
     question: "Are prices and lead times guaranteed?",

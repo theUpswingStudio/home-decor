@@ -121,8 +121,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {category ? <p className={styles.category}>{category.name}</p> : null}
             <h1 className={styles.title} id="product-title">{product.name}</h1>
             <p className={styles.shortDescription}>{product.shortDescription}</p>
-            <VariantSelector productName={product.name} variants={variantChoices} />
-            <p className={styles.commerceNote}>Delivery, installation, duties, and taxes are confirmed separately for the destination and access plan.</p>
+            <VariantSelector productId={product.id} productName={product.name} variants={variantChoices} />
+            <p className={styles.commerceNote}>
+              Saved selections stay in this browser for 30 days. Saving does not reserve inventory
+              or begin a purchase. Delivery, installation, duties, and taxes are confirmed separately.
+            </p>
           </section>
         </div>
 

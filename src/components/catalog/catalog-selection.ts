@@ -1,5 +1,5 @@
 import type { Product, ProductSort, ProductType } from "@/data/catalog";
-import { catalog, selectProducts } from "@/lib/catalog";
+import { catalog, getProductPriceRange, selectProducts } from "@/lib/catalog";
 
 export type CatalogSearchParams = Record<string, string | string[] | undefined>;
 export type CatalogFilterKey = "category" | "room" | "material" | "style" | "type" | "price";
@@ -14,6 +14,7 @@ export interface CatalogFilterGroup {
   readonly key: CatalogFilterKey;
   readonly label: string;
   readonly multiple: boolean;
+  readonly priority: "quick" | "more";
   readonly options: readonly CatalogFilterOption[];
 }
 
@@ -34,7 +35,7 @@ interface PriceBand {
   readonly maximumPriceMinor?: number;
 }
 
-const materialDefinitions = [
+export const materialDefinitions = [
   { value: "wood", label: "Wood", terms: ["wood", "walnut", "oak", "ash"] },
   { value: "upholstery", label: "Upholstery", terms: ["upholstery", "weave", "velvet", "boucle", "linen"] },
   { value: "metal", label: "Metal", terms: ["steel", "aluminum", "bronze"] },
@@ -54,7 +55,7 @@ const styleValues = [
   "sculptural",
 ] as const;
 
-const priceBands: readonly PriceBand[] = [
+export const priceBands: readonly PriceBand[] = [
   { value: "under-1500", label: "Under $1,500", maximumPriceMinor: 150000 },
   { value: "1500-3000", label: "$1,500–$3,000", minimumPriceMinor: 150000, maximumPriceMinor: 300000 },
   { value: "3000-5000", label: "$3,000–$5,000", minimumPriceMinor: 300000, maximumPriceMinor: 500000 },
@@ -98,19 +99,10 @@ function countMatching(predicate: (product: Product) => boolean): number {
 
 export const catalogFilterGroups: readonly CatalogFilterGroup[] = [
   {
-    key: "category",
-    label: "Category",
-    multiple: true,
-    options: catalog.categories.map((category) => ({
-      value: category.slug,
-      label: category.name,
-      count: countMatching((product) => product.categoryId === category.id),
-    })),
-  },
-  {
     key: "room",
     label: "Room",
     multiple: true,
+    priority: "quick",
     options: catalog.rooms.map((room) => ({
       value: room.slug,
       label: room.name,
@@ -121,6 +113,7 @@ export const catalogFilterGroups: readonly CatalogFilterGroup[] = [
     key: "material",
     label: "Material",
     multiple: true,
+    priority: "quick",
     options: materialDefinitions.map((material) => ({
       value: material.value,
       label: material.label,
@@ -129,8 +122,9 @@ export const catalogFilterGroups: readonly CatalogFilterGroup[] = [
   },
   {
     key: "style",
-    label: "Style",
+    label: "Direction",
     multiple: true,
+    priority: "quick",
     options: styleValues.map((style) => ({
       value: style,
       label: style.replace(/(^|\s)\S/g, (letter) => letter.toUpperCase()),
@@ -138,9 +132,21 @@ export const catalogFilterGroups: readonly CatalogFilterGroup[] = [
     })),
   },
   {
+    key: "category",
+    label: "Category",
+    multiple: true,
+    priority: "more",
+    options: catalog.categories.map((category) => ({
+      value: category.slug,
+      label: category.name,
+      count: countMatching((product) => product.categoryId === category.id),
+    })),
+  },
+  {
     key: "type",
     label: "Product type",
     multiple: true,
+    priority: "more",
     options: (Object.keys(productTypeLabels) as ProductType[]).map((type) => ({
       value: type,
       label: productTypeLabels[type],
@@ -151,6 +157,7 @@ export const catalogFilterGroups: readonly CatalogFilterGroup[] = [
     key: "price",
     label: "Price",
     multiple: false,
+    priority: "more",
     options: priceBands.map((band) => ({
       value: band.value,
       label: band.label,
@@ -158,6 +165,32 @@ export const catalogFilterGroups: readonly CatalogFilterGroup[] = [
     })),
   },
 ];
+
+export function getProductFilterValues(product: Product): Omit<ActiveCatalogValues, "query"> {
+  const category = catalog.categories.find((item) => item.id === product.categoryId);
+  const rooms = product.roomIds.flatMap((id) => catalog.rooms.find((item) => item.id === id)?.slug ?? []);
+  const materials = materialDefinitions
+    .filter((material) => productMatchesMaterial(product, material.value))
+    .map((material) => material.value);
+  const range = getProductPriceRange(product);
+  const prices = priceBands
+    .filter((band) => {
+      if (!range) return false;
+      if (band.minimumPriceMinor !== undefined && range.maximumMinor < band.minimumPriceMinor) return false;
+      if (band.maximumPriceMinor !== undefined && range.minimumMinor > band.maximumPriceMinor) return false;
+      return true;
+    })
+    .map((band) => band.value);
+
+  return {
+    category: category ? [category.slug] : [],
+    room: rooms,
+    material: materials,
+    style: product.styleTags,
+    type: [product.productType],
+    price: prices,
+  };
+}
 
 const optionSets = new Map(catalogFilterGroups.map((group) => [group.key, new Set(group.options.map((option) => option.value))]));
 

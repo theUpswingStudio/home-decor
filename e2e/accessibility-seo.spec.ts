@@ -7,7 +7,7 @@ const accessibilityPaths = [
   "/",
   "/shop",
   `/products/${representativeProduct.slug}`,
-  "/cart",
+  "/project-edit",
   "/design-services/inquire",
 ];
 
@@ -152,7 +152,7 @@ test("owned utility routes are noindex, follow with route-specific social metada
 }) => {
   const routes = [
     { path: "/search", title: "Search the Catalog" },
-    { path: "/cart", title: "Your Cart" },
+    { path: "/project-edit", title: "Your Project Edit" },
     {
       path: "/design-services/inquire",
       title: "Design Consultation Inquiry",

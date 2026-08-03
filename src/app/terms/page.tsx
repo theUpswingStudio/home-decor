@@ -47,7 +47,7 @@ export default function TermsPage() {
             <p>
               Product names, specifications, variants, prices, lead times, availability implications,
               service areas, and policies are demonstration content. They are not an advertisement,
-              quote, guarantee, or representation of live goods. Adding a selection to the cart only
+              quote, guarantee, or representation of live goods. Saving an entry to Project Edit only
               stores a planning reference in the current browser.
             </p>
           </section>

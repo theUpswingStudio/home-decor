@@ -3,7 +3,7 @@ import {
   MagnifyingGlassIcon,
 } from "@phosphor-icons/react/ssr";
 import Link from "next/link";
-import { CartCount } from "@/components/cart/cart-count";
+import { ProjectEditCount } from "@/components/project-edit/project-edit-count";
 import { Container } from "@/components/ui/container";
 import { MobileNavigation } from "./mobile-navigation";
 import { primaryNavigation } from "./navigation";
@@ -41,13 +41,13 @@ export function Header() {
           </Link>
           <Link
             className="site-header__utility-link"
-            href="/cart"
+            href="/project-edit"
           >
             <HandbagIcon size={20} weight="regular" aria-hidden="true" />
             <span className="site-header__utility-label" aria-hidden="true">
-              Cart
+              Project Edit
             </span>
-            <CartCount className="site-header__cart-count" />
+            <ProjectEditCount className="site-header__cart-count" />
           </Link>
         </div>
       </Container>

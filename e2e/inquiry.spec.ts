@@ -112,29 +112,41 @@ test("inquiry validates both steps, preserves Back state, and never submits", as
   ).toBe(false);
 });
 
-test("an inquiry started from cart includes the saved selection summary", async ({
+test("an inquiry started from Project Edit includes all saved entry types", async ({
   page,
 }) => {
   const product = catalog.products[0];
   const variantId = product.variantIds[0];
   await page.addInitScript(
-    ({ storageKey, savedVariantId }) => {
+    ({ storageKey, savedVariantId, productId, roomId, collectionId }) => {
       window.localStorage.setItem(
         storageKey,
         JSON.stringify({
           version: 1,
           updatedAt: Date.now(),
-          items: [{ variantId: savedVariantId, quantity: 2 }],
+          entries: [
+            { type: "product", productId, variantId: savedVariantId, quantity: 2, addedAt: Date.now() },
+            { type: "room", roomId, addedAt: Date.now() },
+            { type: "material", collectionId, addedAt: Date.now() },
+          ],
         }),
       );
     },
-    { storageKey: "vestrel-house:cart", savedVariantId: variantId },
+    {
+      storageKey: "vestrel-house:project-edit:v1",
+      savedVariantId: variantId,
+      productId: product.id,
+      roomId: catalog.rooms[0].id,
+      collectionId: catalog.collections[0].id,
+    },
   );
 
-  await page.goto("/design-services/inquire?from=cart");
-  const summary = page.getByRole("region", { name: "Selections from your cart" });
+  await page.goto("/design-services/inquire?from=project-edit");
+  const summary = page.getByRole("region", { name: "Selections from your Project Edit" });
   await expect(summary).toContainText(product.name);
   await expect(summary).toContainText("Qty. 2");
+  await expect(summary).toContainText(catalog.rooms[0].name);
+  await expect(summary).toContainText(catalog.collections[0].name);
 });
 
 test.describe("with JavaScript disabled", () => {

@@ -1,0 +1,34 @@
+.action,
+.saved {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-functional);
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--ink);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.action:hover,
+.saved:hover {
+  border-color: var(--ink);
+  background: var(--surface);
+}
+
+.action:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.saved {
+  border-color: var(--moss);
+  color: var(--moss);
+}

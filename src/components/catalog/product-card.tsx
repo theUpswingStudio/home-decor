@@ -6,6 +6,7 @@ import {
   sharedMediaTransitionType,
 } from "@/components/motion/shared-media-transition";
 import type { Product } from "@/data/catalog";
+import { ProjectEditSaveAction } from "@/components/project-edit/project-edit-save-action";
 import { formatProductPrice, getCategoryById } from "@/lib/catalog";
 import styles from "./catalog.module.css";
 
@@ -23,6 +24,8 @@ export function ProductCard({
   const image = product.images.find((candidate) => candidate.role === "hero") ?? product.images[0];
   const category = getCategoryById(product.categoryId);
   const price = formatProductPrice(product);
+  const overall = product.dimensions.overall;
+  const dimensions = `${overall.widthIn} W × ${overall.depthIn} D × ${overall.heightIn} H in`;
   const href = `/products/${product.slug}`;
   const imageLink = (
     <Link
@@ -62,7 +65,6 @@ export function ProductCard({
         </SharedMediaTransition>
       ) : imageLink}
       <div className={styles.cardBody}>
-        <p className={styles.referenceLabel}>Reference image</p>
         <h2 className={styles.title}>
           <Link
             className={styles.titleLink}
@@ -86,6 +88,21 @@ export function ProductCard({
             </Link>
           </p>
         ) : null}
+        <dl className={styles.planningFacts}>
+          <div>
+            <dt>Material</dt>
+            <dd>{product.materials[0]}</dd>
+          </div>
+          <div>
+            <dt>Size</dt>
+            <dd>{dimensions}</dd>
+          </div>
+        </dl>
+        <ProjectEditSaveAction
+          className={styles.saveAction}
+          target={{ type: "product", id: product.id }}
+          label="Save product"
+        />
       </div>
     </article>
   );

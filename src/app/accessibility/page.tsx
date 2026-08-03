@@ -60,7 +60,7 @@ export default function AccessibilityPage() {
             <p>
               The inquiry demo groups related choices, marks required and optional fields, presents an
               error summary, links messages to fields, and moves focus when the step or completion state
-              changes. Cart and filter controls use native form elements where practical.
+              changes. Project Edit and filter controls use native form elements where practical.
             </p>
           </section>
 

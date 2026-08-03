@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
-  type FormEvent,
   type ReactNode,
+  useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   useTransition,
@@ -15,148 +17,145 @@ import type {
   CatalogFilterGroup,
   CatalogFilterKey,
 } from "./catalog-selection";
+import {
+  countMatchingShopRecords,
+  type ShopEntryType,
+  type ShopFilterRecord,
+} from "./shop-index";
 import styles from "./shop-filters.module.css";
 
-interface FilterFormProps {
-  groups: readonly CatalogFilterGroup[];
-  selected: ActiveCatalogValues;
-  query: string;
-  idPrefix: string;
-  onQueryChange: (value: string) => void;
-  onToggle: (key: CatalogFilterKey, value: string, checked: boolean, multiple: boolean) => void;
-  onClear: () => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-}
-
-function FilterForm({
-  groups,
-  selected,
-  query,
-  idPrefix,
-  onQueryChange,
-  onToggle,
-  onClear,
-  onSubmit,
-}: FilterFormProps) {
-  return (
-    <form className={styles.form} action="/shop" method="get" onSubmit={onSubmit}>
-      <label className={styles.searchField} htmlFor={`${idPrefix}-query`}>
-        <span className={styles.fieldLabel}>Search the catalog</span>
-        <input
-          className={styles.searchInput}
-          id={`${idPrefix}-query`}
-          name="query"
-          type="search"
-          value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
-          autoComplete="off"
-        />
-      </label>
-      {groups.map((group) => (
-        <fieldset className={styles.group} key={group.key}>
-          <legend className={styles.groupTitle}>{group.label}</legend>
-          <ul className={styles.optionList}>
-            {group.options.map((option) => {
-              const id = `${idPrefix}-${group.key}-${option.value.replace(/[^a-z0-9]+/g, "-")}`;
-              const checked = selected[group.key].includes(option.value);
-              return (
-                <li key={option.value}>
-                  <label className={styles.optionLabel} htmlFor={id}>
-                    <input
-                      className={styles.optionInput}
-                      id={id}
-                      name={group.key}
-                      type={group.multiple ? "checkbox" : "radio"}
-                      value={option.value}
-                      checked={checked}
-                      onChange={(event) => onToggle(group.key, option.value, event.target.checked, group.multiple)}
-                    />
-                    <span>{option.label}</span>
-                    <span className={styles.optionCount} aria-label={`${option.count} products`}>{option.count}</span>
-                  </label>
-                </li>
-              );
-            })}
-          </ul>
-        </fieldset>
-      ))}
-      <div className={styles.formActions}>
-        <button className={styles.submitButton} type="submit">Update results</button>
-        <button
-          className={styles.clearButton}
-          type="button"
-          data-filter-clear="true"
-          onClick={onClear}
-        >
-          Clear all
-        </button>
-      </div>
-    </form>
-  );
-}
-
 interface ShopFiltersProps {
-  groups: readonly CatalogFilterGroup[];
-  initialValues: ActiveCatalogValues;
-  initialSort: string;
-  resultCount: number;
-  children: ReactNode;
+  readonly groups: readonly CatalogFilterGroup[];
+  readonly initialValues: ActiveCatalogValues;
+  readonly initialSort: string;
+  readonly resultCount: number;
+  readonly entryType: ShopEntryType;
+  readonly typeCounts: Readonly<Record<ShopEntryType, number>>;
+  readonly records: readonly ShopFilterRecord[];
+  readonly children: ReactNode;
 }
 
-const filterKeys: readonly (CatalogFilterKey | "query")[] = ["category", "room", "material", "style", "type", "price", "query"];
+const FILTER_KEYS: readonly (CatalogFilterKey | "query")[] = [
+  "category",
+  "room",
+  "material",
+  "style",
+  "type",
+  "price",
+  "query",
+];
+
+const ENTRY_LABELS: Readonly<Record<ShopEntryType, string>> = {
+  all: "All entries",
+  product: "Products",
+  "room-edit": "Room edits",
+  "material-note": "Material notes",
+};
+
+const ENTRY_SCROLL_KEY = "shop-entry-scroll";
 
 function filterChipId(key: CatalogFilterKey | "query", value: string) {
   return `filter-chip-${key}-${encodeURIComponent(value)}`;
-}
-
-interface FilterDialogSnapshot {
-  selected: ActiveCatalogValues;
-  query: string;
-  selectionDirty: boolean;
-  queryDirty: boolean;
 }
 
 function setBodyOverflow(value: string) {
   document.body.style.overflow = value;
 }
 
-export function ShopFilters({ groups, initialValues, initialSort, resultCount, children }: ShopFiltersProps) {
+interface FilterOptionsProps {
+  readonly group: CatalogFilterGroup;
+  readonly selected: ActiveCatalogValues;
+  readonly idPrefix: string;
+  readonly onToggle: (
+    key: CatalogFilterKey,
+    value: string,
+    checked: boolean,
+    multiple: boolean,
+  ) => void;
+}
+
+function FilterOptions({
+  group,
+  selected,
+  idPrefix,
+  onToggle,
+}: FilterOptionsProps) {
+  return (
+    <fieldset className={styles.group}>
+      <legend className="sr-only">{group.label}</legend>
+      <ul className={styles.optionList}>
+        {group.options.map((option) => {
+          const id = `${idPrefix}-${group.key}-${option.value.replace(/[^a-z0-9]+/g, "-")}`;
+          return (
+            <li key={option.value}>
+              <label className={styles.optionLabel} htmlFor={id}>
+                <input
+                  id={id}
+                  name={group.key}
+                  type={group.multiple ? "checkbox" : "radio"}
+                  value={option.value}
+                  checked={selected[group.key].includes(option.value)}
+                  onChange={(event) =>
+                    onToggle(
+                      group.key,
+                      option.value,
+                      event.currentTarget.checked,
+                      group.multiple,
+                    )
+                  }
+                />
+                <span>{option.label}</span>
+                <span className={styles.optionCount} aria-label={`${option.count} ${option.count === 1 ? "product" : "products"}`}>
+                  {option.count}
+                </span>
+              </label>
+            </li>
+          );
+        })}
+      </ul>
+    </fieldset>
+  );
+}
+
+export function ShopFilters({
+  groups,
+  initialValues,
+  initialSort,
+  resultCount,
+  entryType,
+  typeCounts,
+  records,
+  children,
+}: ShopFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const shellRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const resultsHeadingRef = useRef<HTMLHeadingElement>(null);
-  const pendingFocusRef = useRef<string[] | null>(null);
-  const focusedChipRef = useRef<{ id: string; index: number } | null>(null);
   const bodyOverflowRef = useRef<string | null>(null);
-  const selectionDirtyRef = useRef(false);
-  const queryDirtyRef = useRef(false);
   const dialogAppliedRef = useRef(false);
-  const dialogSnapshotRef = useRef<FilterDialogSnapshot | null>(null);
-  const [selected, setSelected] = useState<ActiveCatalogValues>(initialValues);
+  const dialogSnapshotRef = useRef<{
+    readonly selected: ActiveCatalogValues;
+    readonly query: string;
+  } | null>(null);
+  const pendingFocusRef = useRef<string[] | null>(null);
+  const [selected, setSelected] = useState(initialValues);
   const [query, setQuery] = useState(initialValues.query[0] ?? "");
   const [sort, setSort] = useState(initialSort);
+  const [desktopQueryDirty, setDesktopQueryDirty] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const initialSignature = JSON.stringify([initialValues, initialSort]);
-  const previousInitialSignatureRef = useRef(initialSignature);
+  const initialSignature = JSON.stringify([initialValues, initialSort, entryType]);
+  const previousSignatureRef = useRef(initialSignature);
 
   useEffect(() => {
-    if (previousInitialSignatureRef.current === initialSignature) return;
-    previousInitialSignatureRef.current = initialSignature;
-    if (dialogRef.current?.open) {
-      dialogSnapshotRef.current = {
-        selected: initialValues,
-        query: initialValues.query[0] ?? "",
-        selectionDirty: false,
-        queryDirty: false,
-      };
-    }
-    if (!selectionDirtyRef.current) setSelected(initialValues);
-    if (!queryDirtyRef.current) setQuery(initialValues.query[0] ?? "");
+    if (previousSignatureRef.current === initialSignature) return;
+    previousSignatureRef.current = initialSignature;
+    setSelected(initialValues);
+    setQuery(initialValues.query[0] ?? "");
     setSort(initialSort);
-  }, [initialSignature, initialSort, initialValues]);
+    setDesktopQueryDirty(false);
+  }, [entryType, initialSignature, initialSort, initialValues]);
 
   useEffect(() => () => {
     if (bodyOverflowRef.current !== null) {
@@ -164,66 +163,87 @@ export function ShopFilters({ groups, initialValues, initialSort, resultCount, c
     }
   }, []);
 
-  function pushValues(next: ActiveCatalogValues, nextSort = sort) {
-    const params = new URLSearchParams(searchParams.toString());
-    for (const key of filterKeys) params.delete(key);
-    for (const key of filterKeys) {
+  const searchSignature = searchParams.toString();
+  const buildHref = useCallback(function buildHref(
+    next: ActiveCatalogValues,
+    nextSort = sort,
+    nextEntryType = entryType,
+  ) {
+    const params = new URLSearchParams(searchSignature);
+    for (const key of FILTER_KEYS) params.delete(key);
+    for (const key of FILTER_KEYS) {
       for (const value of next[key]) params.append(key, value);
     }
-    if (nextSort === "featured") params.delete("sort");
-    else params.set("sort", nextSort);
-    startTransition(() => router.push(`${pathname}${params.size ? `?${params}` : ""}`, { scroll: false }));
-  }
+    if (nextEntryType === "all") params.delete("entry");
+    else params.set("entry", nextEntryType);
+    if (nextEntryType === "product" && nextSort !== "featured") {
+      params.set("sort", nextSort);
+    } else {
+      params.delete("sort");
+    }
+    return `${pathname}${params.size ? `?${params}` : ""}`;
+  }, [entryType, pathname, searchSignature, sort]);
 
-  function toggleValue(key: CatalogFilterKey, value: string, checked: boolean, multiple: boolean, commit: boolean) {
+  const pushValues = useCallback(function pushValues(
+    next: ActiveCatalogValues,
+    nextSort = sort,
+    nextEntryType = entryType,
+  ) {
+    startTransition(() => {
+      router.push(buildHref(next, nextSort, nextEntryType), { scroll: false });
+    });
+  }, [buildHref, entryType, router, sort]);
+
+  useEffect(() => {
+    if (!desktopQueryDirty || dialogRef.current?.open) return;
+    const timer = window.setTimeout(() => {
+      setDesktopQueryDirty(false);
+      const next = { ...selected, query: query.trim() ? [query.trim()] : [] };
+      setSelected(next);
+      pushValues(next);
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [desktopQueryDirty, pushValues, query, selected]);
+
+  function toggleValue(
+    key: CatalogFilterKey,
+    value: string,
+    checked: boolean,
+    multiple: boolean,
+    commit: boolean,
+  ) {
     const current = selected[key];
     const values = multiple
-      ? checked ? [...new Set([...current, value])] : current.filter((candidate) => candidate !== value)
-      : checked ? [value] : [];
+      ? checked
+        ? [...new Set([...current, value])]
+        : current.filter((candidate) => candidate !== value)
+      : checked
+        ? [value]
+        : [];
     const next = { ...selected, [key]: values };
     setSelected(next);
-    selectionDirtyRef.current = !commit;
     if (commit) pushValues(next);
   }
 
-  function clearAll() {
-    const empty: ActiveCatalogValues = { category: [], room: [], material: [], style: [], type: [], price: [], query: [] };
-    selectionDirtyRef.current = false;
-    queryDirtyRef.current = false;
+  function clearAll(commit: boolean) {
+    const empty: ActiveCatalogValues = {
+      category: [],
+      room: [],
+      material: [],
+      style: [],
+      type: [],
+      price: [],
+      query: [],
+    };
     setSelected(empty);
     setQuery("");
-    pushValues(empty);
-  }
-
-  function clearDraft() {
-    selectionDirtyRef.current = true;
-    queryDirtyRef.current = true;
-    setSelected({ category: [], room: [], material: [], style: [], type: [], price: [], query: [] });
-    setQuery("");
-  }
-
-  function submitFilters(event: FormEvent<HTMLFormElement>, closeAfterSubmit = false) {
-    event.preventDefault();
-    const next = { ...selected, query: query.trim() ? [query.trim()] : [] };
-    selectionDirtyRef.current = false;
-    queryDirtyRef.current = false;
-    setSelected(next);
-    pushValues(next);
-    if (closeAfterSubmit) {
-      dialogAppliedRef.current = true;
-      closeDialog();
-    }
+    if (commit) pushValues(empty);
   }
 
   function openDialog() {
     const dialog = dialogRef.current;
     if (!dialog || dialog.open) return;
-    dialogSnapshotRef.current = {
-      selected,
-      query,
-      selectionDirty: selectionDirtyRef.current,
-      queryDirty: queryDirtyRef.current,
-    };
+    dialogSnapshotRef.current = { selected, query };
     dialogAppliedRef.current = false;
     bodyOverflowRef.current = document.body.style.overflow;
     setBodyOverflow("hidden");
@@ -234,11 +254,9 @@ export function ShopFilters({ groups, initialValues, initialSort, resultCount, c
     dialogRef.current?.close();
   }
 
-  function restoreBodyAndFocus() {
+  function restoreDialogState() {
     const snapshot = dialogSnapshotRef.current;
     if (!dialogAppliedRef.current && snapshot) {
-      selectionDirtyRef.current = snapshot.selectionDirty;
-      queryDirtyRef.current = snapshot.queryDirty;
       setSelected(snapshot.selected);
       setQuery(snapshot.query);
     }
@@ -251,69 +269,150 @@ export function ShopFilters({ groups, initialValues, initialSort, resultCount, c
     window.requestAnimationFrame(() => triggerRef.current?.focus());
   }
 
-  const labelByValue = new Map(groups.flatMap((group) => group.options.map((option) => [`${group.key}:${option.value}`, option.label])));
-  const chips = filterKeys.flatMap((key) => selected[key].map((value) => ({
-    key,
-    value,
-    label: key === "query" ? `Search: “${value}”` : labelByValue.get(`${key}:${value}`) ?? value,
-  })));
-  const chipIdsSignature = chips
+  const labelByValue = useMemo(
+    () =>
+      new Map(
+        groups.flatMap((group) =>
+          group.options.map((option) => [
+            `${group.key}:${option.value}`,
+            option.label,
+          ]),
+        ),
+      ),
+    [groups],
+  );
+  const chips = FILTER_KEYS.flatMap((key) =>
+    selected[key].map((value) => ({
+      key,
+      value,
+      label:
+        key === "query"
+          ? `Search: “${value}”`
+          : labelByValue.get(`${key}:${value}`) ?? value,
+    })),
+  );
+
+  const chipSignature = chips
     .map((chip) => filterChipId(chip.key, chip.value))
     .join("|");
-  const productLabel = `${resultCount} ${resultCount === 1 ? "product" : "products"}`;
 
   useLayoutEffect(() => {
-    let candidateIds = pendingFocusRef.current;
-    const focusedChip = focusedChipRef.current;
-    if (
-      candidateIds === null &&
-      focusedChip &&
-      !document.getElementById(focusedChip.id)
-    ) {
-      const activeElement = document.activeElement;
-      if (
-        activeElement === null ||
-        activeElement === document.body ||
-        activeElement === document.documentElement
-      ) {
-        const chipIds = chipIdsSignature ? chipIdsSignature.split("|") : [];
-        candidateIds = [
-          chipIds[focusedChip.index],
-          chipIds[focusedChip.index - 1],
-        ].filter((id): id is string => id !== undefined);
-      }
-      focusedChipRef.current = null;
-    }
+    const candidateIds = pendingFocusRef.current;
     if (candidateIds === null) return;
     pendingFocusRef.current = null;
-    focusedChipRef.current = null;
-
     const frame = window.requestAnimationFrame(() => {
-      const isVisible = (element: HTMLElement | null | undefined): element is HTMLElement =>
-        Boolean(element && element.getClientRects().length > 0);
       const candidate = candidateIds
         .map((id) => document.getElementById(id))
-        .find(isVisible);
-      if (candidate) {
-        candidate.focus();
-        return;
-      }
-
-      const clearControl = Array.from(
-        shellRef.current?.querySelectorAll<HTMLElement>("[data-filter-clear]") ?? [],
-      ).find(isVisible);
-      const fallback = [clearControl, triggerRef.current, resultsHeadingRef.current].find(
-        isVisible,
-      );
-      fallback?.focus();
+        .find((element): element is HTMLElement => element instanceof HTMLElement && element.getClientRects().length > 0);
+      (candidate ?? triggerRef.current ?? resultsHeadingRef.current)?.focus();
     });
-
     return () => window.cancelAnimationFrame(frame);
-  }, [chipIdsSignature]);
+  }, [chipSignature]);
+
+  useEffect(() => {
+    const storedTop = window.sessionStorage.getItem(ENTRY_SCROLL_KEY);
+    if (storedTop === null) return;
+    window.sessionStorage.removeItem(ENTRY_SCROLL_KEY);
+    const top = Number(storedTop);
+    if (!Number.isFinite(top)) return;
+    let restoreFrame: number | null = null;
+    const settleFrame = window.requestAnimationFrame(() => {
+      restoreFrame = window.requestAnimationFrame(() => {
+        window.scrollTo({ top, behavior: "auto" });
+      });
+    });
+    return () => {
+      window.cancelAnimationFrame(settleFrame);
+      if (restoreFrame !== null) window.cancelAnimationFrame(restoreFrame);
+    };
+  }, [entryType]);
+
+  const quickGroups = groups.filter((group) => group.priority === "quick");
+  const moreGroups = groups.filter((group) => group.priority === "more");
+  const visibleGroups = entryType === "product" || entryType === "all" ? groups : quickGroups;
+  const draftValues = { ...selected, query: query.trim() ? [query.trim()] : [] };
+  const draftCount = countMatchingShopRecords(records, entryType, draftValues);
+  const resultLabel = `${resultCount} ${resultCount === 1 ? "entry" : "entries"}`;
 
   return (
-    <div className={styles.shell} ref={shellRef}>
+    <div className={styles.shell}>
+      <nav className={styles.typeSwitch} aria-label="Entry type">
+        {(["all", "product", "room-edit", "material-note"] as const).map((type) => (
+          <Link
+            key={type}
+            href={buildHref(initialValues, initialSort, type)}
+            scroll={false}
+            onClickCapture={(event) => {
+              if (
+                type === entryType
+                || event.button !== 0
+                || event.metaKey
+                || event.ctrlKey
+                || event.shiftKey
+                || event.altKey
+              ) return;
+              window.sessionStorage.setItem(ENTRY_SCROLL_KEY, String(window.scrollY));
+            }}
+            aria-current={entryType === type ? "page" : undefined}
+          >
+            <span>{ENTRY_LABELS[type]}</span>
+            <span aria-hidden="true">{typeCounts[type]}</span>
+          </Link>
+        ))}
+      </nav>
+
       <div className={styles.toolbar}>
+        <label className={styles.desktopSearch}>
+          <span>Search the edit</span>
+          <input
+            type="search"
+            value={query}
+            autoComplete="off"
+            onChange={(event) => {
+              setQuery(event.currentTarget.value);
+              setDesktopQueryDirty(true);
+            }}
+          />
+        </label>
+
+        <div className={styles.desktopFilters}>
+          {quickGroups.map((group) => (
+            <details key={group.key} name="shop-desktop-filters">
+              <summary>{group.label}</summary>
+              <div className={styles.filterMenu}>
+                <FilterOptions
+                  group={group}
+                  selected={selected}
+                  idPrefix="desktop"
+                  onToggle={(key, value, checked, multiple) =>
+                    toggleValue(key, value, checked, multiple, true)
+                  }
+                />
+              </div>
+            </details>
+          ))}
+          {entryType === "product" || entryType === "all" ? (
+            <details name="shop-desktop-filters">
+              <summary>More filters</summary>
+              <div className={`${styles.filterMenu} ${styles.moreMenu}`}>
+                {moreGroups.map((group) => (
+                  <section key={group.key} aria-labelledby={`more-${group.key}`}>
+                    <h3 id={`more-${group.key}`}>{group.label}</h3>
+                    <FilterOptions
+                      group={group}
+                      selected={selected}
+                      idPrefix="desktop-more"
+                      onToggle={(key, value, checked, multiple) =>
+                        toggleValue(key, value, checked, multiple, true)
+                      }
+                    />
+                  </section>
+                ))}
+              </div>
+            </details>
+          ) : null}
+        </div>
+
         <button
           className={styles.filterTrigger}
           type="button"
@@ -323,27 +422,30 @@ export function ShopFilters({ groups, initialValues, initialSort, resultCount, c
         >
           Filters{chips.length ? ` (${chips.length})` : ""}
         </button>
-        <p className={styles.resultCount} aria-live="polite">{productLabel}</p>
-        <label className={styles.sortWrap}>
-          <span className={styles.sortLabel}>Sort by</span>
-          <select
-            className={styles.sort}
-            name="sort"
-            aria-label="Sort products"
-            value={sort}
-            onChange={(event) => {
-              const nextSort = event.target.value;
-              setSort(nextSort);
-              pushValues(selected, nextSort);
-            }}
-          >
-            <option value="featured">Featured</option>
-            <option value="newest">Newest</option>
-            <option value="name">Name</option>
-            <option value="price-asc">Price, low to high</option>
-            <option value="price-desc">Price, high to low</option>
-          </select>
-        </label>
+
+        <p className={styles.resultCount} aria-live="polite">{resultLabel}</p>
+
+        {entryType === "product" ? (
+          <label className={styles.sortWrap}>
+            <span>Sort</span>
+            <select
+              name="sort"
+              aria-label="Sort products"
+              value={sort}
+              onChange={(event) => {
+                const nextSort = event.currentTarget.value;
+                setSort(nextSort);
+                pushValues(selected, nextSort);
+              }}
+            >
+              <option value="featured">Curated</option>
+              <option value="newest">Recently added</option>
+              <option value="name">Name</option>
+              <option value="price-asc">Price, low to high</option>
+              <option value="price-desc">Price, high to low</option>
+            </select>
+          </label>
+        ) : null}
       </div>
 
       {chips.length > 0 ? (
@@ -352,15 +454,8 @@ export function ShopFilters({ groups, initialValues, initialSort, resultCount, c
             <li key={`${chip.key}-${chip.value}`}>
               <button
                 id={filterChipId(chip.key, chip.value)}
-                className={styles.chip}
                 type="button"
-                data-filter-chip="true"
-                onFocus={() => {
-                  focusedChipRef.current = {
-                    id: filterChipId(chip.key, chip.value),
-                    index,
-                  };
-                }}
+                aria-label={`Remove ${chip.label}`}
                 onClick={() => {
                   pendingFocusRef.current = [chips[index + 1], chips[index - 1]]
                     .filter((candidate) => candidate !== undefined)
@@ -368,87 +463,80 @@ export function ShopFilters({ groups, initialValues, initialSort, resultCount, c
                   if (chip.key === "query") {
                     setQuery("");
                     const next = { ...selected, query: [] };
-                    queryDirtyRef.current = false;
                     setSelected(next);
                     pushValues(next);
                   } else {
                     toggleValue(chip.key, chip.value, false, true, true);
                   }
                 }}
-                aria-label={`Remove ${chip.label}`}
               >
-                {chip.label}<span className={styles.chipMark} aria-hidden="true">×</span>
+                {chip.label}<span aria-hidden="true">×</span>
               </button>
             </li>
           ))}
-          <li>
-            <button
-              className={styles.clearButton}
-              type="button"
-              data-filter-clear="true"
-              onClick={() => {
-                pendingFocusRef.current = [];
-                clearAll();
-              }}
-            >
-              Clear all
-            </button>
-          </li>
+          <li><button type="button" onClick={() => clearAll(true)}>Clear all</button></li>
         </ul>
       ) : null}
 
-      <div className={styles.resultsLayout}>
-        <aside className={styles.rail} aria-label="Catalog filters">
-          <FilterForm
-            groups={groups}
-            selected={selected}
-            query={query}
-            idPrefix="desktop"
-            onQueryChange={(value) => {
-              queryDirtyRef.current = true;
-              setQuery(value);
-            }}
-            onToggle={(key, value, checked, multiple) => toggleValue(key, value, checked, multiple, true)}
-            onClear={clearAll}
-            onSubmit={submitFilters}
-          />
-        </aside>
-        <section className={styles.results} id="catalog-results" aria-busy={isPending} aria-label={productLabel}>
-          <h2 className="sr-only" ref={resultsHeadingRef} tabIndex={-1}>
-            Catalog results
-          </h2>
-          {children}
-        </section>
-      </div>
+      <section className={styles.results} aria-busy={isPending} aria-label={resultLabel}>
+        <h2 className="sr-only" ref={resultsHeadingRef} tabIndex={-1}>Catalog results</h2>
+        {children}
+      </section>
 
       <dialog
         className={styles.dialog}
         ref={dialogRef}
         aria-labelledby="filter-dialog-title"
-        onClose={restoreBodyAndFocus}
-        onCancel={() => undefined}
+        onClose={restoreDialogState}
         onClick={(event) => {
           if (event.target === event.currentTarget) closeDialog();
         }}
       >
         <div className={styles.dialogPanel}>
           <header className={styles.dialogHeader}>
-            <h2 className={styles.dialogTitle} id="filter-dialog-title">Filter products</h2>
-            <button className={styles.closeButton} type="button" onClick={closeDialog}>Close</button>
+            <h2 id="filter-dialog-title">Filter entries</h2>
+            <button type="button" onClick={closeDialog}>Close</button>
           </header>
-          <FilterForm
-            groups={groups}
-            selected={selected}
-            query={query}
-            idPrefix="mobile"
-            onQueryChange={(value) => {
-              queryDirtyRef.current = true;
-              setQuery(value);
-            }}
-            onToggle={(key, value, checked, multiple) => toggleValue(key, value, checked, multiple, false)}
-            onClear={clearDraft}
-            onSubmit={(event) => submitFilters(event, true)}
-          />
+          <div className={styles.dialogBody}>
+            <label className={styles.mobileSearch}>
+              <span>Search the edit</span>
+              <input
+                type="search"
+                value={query}
+                autoComplete="off"
+                onChange={(event) => setQuery(event.currentTarget.value)}
+              />
+            </label>
+            {visibleGroups.map((group) => (
+              <details className={styles.mobileGroup} key={group.key}>
+                <summary>{group.label}</summary>
+                <FilterOptions
+                  group={group}
+                  selected={selected}
+                  idPrefix="mobile"
+                  onToggle={(key, value, checked, multiple) =>
+                    toggleValue(key, value, checked, multiple, false)
+                  }
+                />
+              </details>
+            ))}
+          </div>
+          <footer className={styles.dialogFooter}>
+            <button type="button" onClick={() => clearAll(false)}>Clear filters</button>
+            <button
+              className={styles.showResults}
+              type="button"
+              onClick={() => {
+                const next = { ...selected, query: query.trim() ? [query.trim()] : [] };
+                dialogAppliedRef.current = true;
+                setSelected(next);
+                pushValues(next);
+                closeDialog();
+              }}
+            >
+              Show {draftCount} {draftCount === 1 ? "entry" : "entries"}
+            </button>
+          </footer>
         </div>
       </dialog>
     </div>

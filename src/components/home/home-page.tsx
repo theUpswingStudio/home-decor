@@ -21,23 +21,22 @@ import {
 import styles from "./home-page.module.css";
 import { LookCarousel } from "./look-carousel";
 import carouselStyles from "./look-carousel.module.css";
-import previewStyles from "./product-preview.module.css";
-
-const featuredPlacements = [
-  { className: styles.productOne, shape: "landscape" as const, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(100vw - 4rem), 47vw" },
-  { className: styles.productTwo, shape: "portrait" as const, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), 23vw" },
-  { className: styles.productThree, shape: "portrait" as const, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), 23vw" },
-  { className: styles.productFour, shape: "square" as const, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), 23vw" },
-  { className: styles.productFive, shape: "portrait" as const, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), 23vw" },
-  { className: styles.productSix, shape: "wide" as const, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(100vw - 4rem), 47vw" },
-];
 
 const roomPlacements = [
-  { className: styles.roomLiving, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), (max-width: 1400px) 65vw, 900px" },
-  { className: styles.roomDining, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), (max-width: 1400px) 57.5vw, 820px" },
-  { className: styles.roomBedroom, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), (max-width: 1400px) 57.5vw, 820px" },
-  { className: styles.roomWorkspace, sizes: "(max-width: 768px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2.5rem), (max-width: 1400px) 56.5vw, 820px" },
+  { className: styles.roomLiving, sizes: "(max-width: 704px) calc(100vw - 2rem), (max-width: 1024px) calc(100vw - 4rem), (max-width: 1400px) 65vw, 900px" },
+  { className: styles.roomDining, sizes: "(max-width: 704px) calc(100vw - 2rem), (max-width: 1024px) calc(100vw - 4rem), (max-width: 1400px) 34vw, 470px" },
+  { className: styles.roomBedroom, sizes: "(max-width: 704px) calc(100vw - 2rem), (max-width: 1024px) calc(100vw - 4rem), (max-width: 1400px) 41vw, 570px" },
+  { className: styles.roomWorkspace, sizes: "(max-width: 704px) calc(100vw - 2rem), (max-width: 1024px) calc(100vw - 4rem), (max-width: 1400px) 57vw, 790px" },
 ];
+
+const featuredRoles: Readonly<Record<string, string>> = {
+  "vale-modular-sofa": "Room anchor",
+  "arden-dining-table": "Dining anchor",
+  "brera-lounge-chair": "Counterpoint seat",
+  "plinth-low-table": "Mineral weight",
+  "canto-chaise-sectional": "Deeper lounge option",
+  "ledger-media-credenza": "Quiet storage",
+};
 
 function getPrimaryImage(images: readonly CatalogImage[]): CatalogImage {
   const image =
@@ -47,55 +46,99 @@ function getPrimaryImage(images: readonly CatalogImage[]): CatalogImage {
   return image;
 }
 
-function FeaturedProductPreview({
-  product,
-  className,
-  imageSizes,
-  shape,
-}: {
-  product: Product;
-  className: string;
-  imageSizes: string;
-  shape: (typeof featuredPlacements)[number]["shape"];
-}) {
-  const image = getPrimaryImage(product.images);
+function getProductContext(product: Product): string {
   const category = getCategoryById(product.categoryId);
   const room = product.roomIds[0] ? getRoomById(product.roomIds[0]) : undefined;
-  const context = [category?.name, room?.name].filter(Boolean).join(" / ");
-  const price = formatProductPrice(product);
-  const shapeClass = {
-    landscape: previewStyles.landscape,
-    portrait: previewStyles.portrait,
-    square: previewStyles.square,
-    wide: previewStyles.wide,
-  }[shape];
+  return [category?.name, room?.name].filter(Boolean).join(" / ");
+}
+
+function ProductEditMetadata({ product }: { product: Product }) {
+  const context = getProductContext(product);
 
   return (
-    <article className={`${previewStyles.preview} ${className}`.trim()}>
-        <Link
-          className={previewStyles.link}
-          href={`/products/${product.slug}`}
-          prefetch={false}
-          data-pressable="card"
-        >
-        <div className={`${previewStyles.imageFrame} ${shapeClass}`}>
+    <p className={styles.productMetadata}>
+      <span>{featuredRoles[product.slug] ?? "Supporting piece"}</span>
+      <span>Reference image{context ? ` · ${context}` : ""}</span>
+    </p>
+  );
+}
+
+function ProductAnchor({ product }: { product: Product }) {
+  const image = getPrimaryImage(product.images);
+  const price = formatProductPrice(product);
+
+  return (
+    <article className={styles.productAnchor}>
+      <Link
+        className={styles.productAnchorLink}
+        href={`/products/${product.slug}`}
+        prefetch={false}
+        data-pressable="card"
+      >
+        <div className={styles.productAnchorImageFrame}>
           <Image
-            className={previewStyles.image}
+            className={styles.productImage}
             src={image.url}
             alt={image.alt}
             fill
-            sizes={imageSizes}
+            sizes="(max-width: 704px) calc(100vw - 2rem), (max-width: 1024px) calc(100vw - 4rem), (max-width: 1440px) 56vw, 760px"
           />
         </div>
-        <div className={previewStyles.details}>
-          <p className={previewStyles.context}>
-            Reference image{context ? ` | ${context}` : ""}
-          </p>
-          <div className={previewStyles.identity}>
-            <h3 className={previewStyles.name}>{product.name}</h3>
-            {price ? <p className={previewStyles.price}>{price}</p> : null}
+        <div className={styles.productAnchorDetails}>
+          <ProductEditMetadata product={product} />
+          <div className={styles.productAnchorIdentity}>
+            <h3>{product.name}</h3>
+            <div className={styles.productAnchorDestination}>
+              {price ? <p>{price}</p> : null}
+              <ArrowRightIcon
+                className={styles.productAnchorArrow}
+                size={18}
+                weight="regular"
+                aria-hidden="true"
+              />
+            </div>
+          </div>
+          <p className={styles.productAnchorDescription}>{product.shortDescription}</p>
+        </div>
+      </Link>
+    </article>
+  );
+}
+
+function ProductEditRow({ product }: { product: Product }) {
+  const image = getPrimaryImage(product.images);
+  const price = formatProductPrice(product);
+
+  return (
+    <article className={styles.productRow}>
+      <Link
+        className={styles.productRowLink}
+        href={`/products/${product.slug}`}
+        prefetch={false}
+        data-pressable="card"
+      >
+        <div className={styles.productRowImageFrame}>
+          <Image
+            className={styles.productImage}
+            src={image.url}
+            alt={image.alt}
+            fill
+            sizes="140px"
+          />
+        </div>
+        <div className={styles.productRowDetails}>
+          <ProductEditMetadata product={product} />
+          <div className={styles.productRowIdentity}>
+            <h3>{product.name}</h3>
+            {price ? <p>{price}</p> : null}
           </div>
         </div>
+        <ArrowRightIcon
+          className={styles.productRowArrow}
+          size={18}
+          weight="regular"
+          aria-hidden="true"
+        />
       </Link>
     </article>
   );
@@ -149,9 +192,20 @@ export function HomePage() {
   const heroImage = getPrimaryImage(catalog.site.heroMedia);
   const heroDetail = catalog.site.heroMedia[2] ?? catalog.site.heroMedia[1];
   const featuredProducts = getFeaturedProducts(6);
+  const anchorProduct = featuredProducts.find(
+    (product) => product.slug === "vale-modular-sofa",
+  );
+  const supportingProducts = featuredProducts.filter(
+    (product) => product.slug !== "vale-modular-sofa",
+  );
   const materialCollection = getCollectionBySlug("material-study");
 
-  if (!materialCollection || catalog.looks.length === 0) {
+  if (
+    !materialCollection ||
+    catalog.looks.length === 0 ||
+    !anchorProduct ||
+    supportingProducts.length !== 5
+  ) {
     throw new Error("Homepage editorial selections are missing from the catalog.");
   }
 
@@ -212,7 +266,7 @@ export function HomePage() {
       <section className={styles.roomsSection} aria-labelledby="rooms-title">
         <Container>
           <div className={styles.sectionIntro}>
-            <h2 id="rooms-title">Shop by room</h2>
+            <h2 id="rooms-title">Explore by room</h2>
             <p>Begin with how the room needs to live, then build its material language.</p>
           </div>
           <div className={styles.roomGrid}>
@@ -236,26 +290,25 @@ export function HomePage() {
           <div className={styles.featuredIntro}>
             <h2 id="featured-title">The considered edit</h2>
             <div className={styles.featuredSupport}>
-              <p>Six pieces chosen for proportion, material presence, and life across rooms.</p>
-              <Link className={styles.textLink} href="/shop">
-                View all furniture
-                <ArrowRightIcon size={18} weight="regular" aria-hidden="true" />
-              </Link>
+              <p>Start with one room-defining anchor. Add contrast through timber, sculptural seating, mineral weight, deeper lounging, and quiet storage.</p>
             </div>
           </div>
-          <div className={styles.productGrid}>
-            {featuredProducts.map((product, index) => {
-              const placement = featuredPlacements[index] ?? featuredPlacements[0];
-              return (
-                <FeaturedProductPreview
-                  key={product.id}
-                  product={product}
-                  className={placement.className}
-                  imageSizes={placement.sizes}
-                  shape={placement.shape}
-                />
-              );
-            })}
+          <div className={styles.productEditLayout}>
+            <ProductAnchor product={anchorProduct} />
+            <div className={styles.productRail}>
+              {supportingProducts.map((product) => (
+                <ProductEditRow key={product.id} product={product} />
+              ))}
+            </div>
+          </div>
+          <div className={styles.featuredActions}>
+            <ButtonLink href="/design-services/inquire">
+              Plan an edit for your room
+            </ButtonLink>
+            <Link className={styles.textLink} href="/shop">
+              View all furniture
+              <ArrowRightIcon size={18} weight="regular" aria-hidden="true" />
+            </Link>
           </div>
         </Container>
       </section>

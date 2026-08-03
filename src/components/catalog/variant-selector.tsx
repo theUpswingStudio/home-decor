@@ -15,11 +15,12 @@ export interface VariantChoice {
 }
 
 interface VariantSelectorProps {
+  productId: string;
   productName: string;
   variants: readonly VariantChoice[];
 }
 
-export function VariantSelector({ productName, variants }: VariantSelectorProps) {
+export function VariantSelector({ productId, productName, variants }: VariantSelectorProps) {
   const [selectedId, setSelectedId] = useState(variants[0]?.id ?? "");
   const selected = variants.find((variant) => variant.id === selectedId) ?? variants[0];
   if (!selected) return null;
@@ -61,6 +62,7 @@ export function VariantSelector({ productName, variants }: VariantSelectorProps)
         </div>
       </dl>
       <AddToCartButton
+        productId={productId}
         variantId={selected.id}
         name={productName}
       />

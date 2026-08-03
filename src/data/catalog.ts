@@ -552,7 +552,7 @@ export const catalog: Catalog = {
       shortDescription: "Focus, with softer edges.",
       description: "Choose a work surface around the tasks at hand, support it with an adjustable chair, then add closed storage and warm task light.",
       media: [
-        unsplashImage("1497366754035-f200968a6e72", 1900, 1300, "Glass-walled office corridor with long sightlines, dark frames, and pendant lights", "hero", "Nastuh Abootalebi", "hallway-between-glass-panel-doors-yWwob8kwOCk"),
+        unsplashImage("1486946255434-2466348c2166", 1800, 1200, "Warm timber writing desk with slim dark legs, a drawer, and an angled task lamp", "hero", "Kari Shea", "black-2-light-torchiere-beside-brown-wooden-top-desk-with-black-steel-frame-tOVmshavtoo"),
         unsplashImage("1524758631624-e2822e304c36", 1500, 1100, "Open office lounge with upholstered chairs, floor lamps, shelving, and daylight", "detail", "Toa Heftiba", "black-floor-lamp-on-living-room-sofa-FV3GConVSss"),
       ],
       seo: { title: "Collected Modern Workspace | Vestrel House", description: "Plan a composed home workspace with desks, task seating, storage, and lighting." },

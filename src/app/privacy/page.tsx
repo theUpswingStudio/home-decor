@@ -60,12 +60,13 @@ export default function PrivacyPage() {
 
           <section className={styles.section} id="storage">
             <p className={styles.kicker}>Local selections</p>
-            <h2>The cart is a browser-side planning list.</h2>
+            <h2>Project Edit is a browser-side planning list.</h2>
             <p>
-              When browser storage is available, the site stores selected catalog variant identifiers,
-              quantities, a schema version, and an update timestamp under <code>vestrel-house:cart</code>.
-              It does not store names, email addresses, payment details, or delivery addresses. Stored
-              selections expire after 30 days and can be removed by clearing the cart or site data.
+              When browser storage is available, the site stores selected product, room, material,
+              and variant identifiers. It also stores quantities, a schema version, and an update
+              timestamp under <code>vestrel-house:project-edit:v1</code>. It does not store names,
+              email addresses, payment details, or delivery addresses. Saved entries expire after
+              30 days. You can remove them from Project Edit or clear the site data.
             </p>
           </section>
 
@@ -85,7 +86,7 @@ export default function PrivacyPage() {
             <p className={styles.kicker}>Control</p>
             <h2>Clear what the browser remembers.</h2>
             <ul className={styles.list}>
-              <li>Remove individual selections or clear the cart from the cart page.</li>
+              <li>Remove entries or clear the full list from the Project Edit page.</li>
               <li>Clear this site&apos;s local storage using browser privacy controls.</li>
               <li>Leave or reload the inquiry page to discard temporary form values.</li>
             </ul>
