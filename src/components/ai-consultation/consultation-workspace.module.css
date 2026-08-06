@@ -764,29 +764,43 @@
 
 .chat {
   display: grid;
-  gap: var(--space-5, 1.25rem);
-  padding-top: var(--space-8);
+  gap: 0;
+  padding-top: var(--space-10);
   border-top: 1px solid var(--ink);
+}
+
+.chat > header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-bottom: var(--space-5, 1.25rem);
+  border-bottom: 1px solid var(--line-decorative);
+}
+
+.chat > header p {
+  max-width: 34rem;
 }
 
 .messages {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
+  padding-block: var(--space-5, 1.25rem);
 }
 
 .assistantMessage,
 .userMessage {
-  max-width: 90%;
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--card-border);
-  background: var(--surface);
+  display: grid;
+  width: fit-content;
+  max-width: min(84%, 48rem);
+  gap: var(--space-2);
+}
+
+.assistantMessage {
+  justify-self: start;
 }
 
 .userMessage {
-  margin-left: auto;
-  border-color: var(--moss);
-  background: var(--moss);
-  color: var(--surface);
+  justify-self: end;
 }
 
 .assistantMessage span,
@@ -798,26 +812,148 @@
 }
 
 .userMessage span {
-  color: var(--line-decorative);
+  color: var(--moss);
+  text-align: right;
 }
 
-.assistantMessage p,
-.userMessage p {
-  margin: var(--space-1) 0 0;
+.messageBubble {
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+}
+
+.userMessage .messageBubble {
+  border-color: var(--moss);
+  background: var(--moss);
+  color: var(--surface);
+}
+
+.plainMessage,
+.messageBody {
+  min-width: 0;
+  max-width: 70ch;
+  margin: 0;
   font-size: 0.875rem;
-  line-height: 1.55;
+  line-height: 1.65;
+}
+
+.plainMessage {
   white-space: pre-wrap;
 }
 
+.messageBody > :first-child {
+  margin-top: 0;
+}
+
+.messageBody > :last-child {
+  margin-bottom: 0;
+}
+
+.messageBody p,
+.messageBody ul,
+.messageBody ol,
+.messageBody blockquote,
+.messageBody pre,
+.messageBody table {
+  margin: 0 0 var(--space-3);
+}
+
+.messageBody p {
+  line-height: 1.65;
+}
+
+.messageBody strong {
+  font-weight: 720;
+}
+
+.messageBody h1,
+.messageBody h2,
+.messageBody h3,
+.messageBody h4 {
+  margin: var(--space-4) 0 var(--space-2);
+  font-family: var(--font-geist), sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 720;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+
+.messageBody ul,
+.messageBody ol {
+  display: grid;
+  gap: var(--space-1);
+  padding-left: var(--space-5, 1.25rem);
+}
+
+.messageBody blockquote {
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--border-functional);
+  color: var(--muted);
+}
+
+.messageBody a {
+  color: var(--oxide-dark);
+  text-decoration-color: color-mix(in srgb, var(--oxide) 55%, transparent);
+  text-underline-offset: 0.18em;
+}
+
+.messageBody a:hover {
+  text-decoration-color: currentColor;
+}
+
+.messageBody code {
+  padding: 0.1rem 0.25rem;
+  border-radius: var(--radius-small);
+  background: var(--image-stage);
+  font-size: 0.8125rem;
+}
+
+.messageBody pre {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: var(--space-3);
+  border: 1px solid var(--line-decorative);
+  background: var(--image-stage);
+}
+
+.messageBody pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.messageBody table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.messageBody th,
+.messageBody td {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line-decorative);
+  text-align: left;
+  white-space: nowrap;
+}
+
 .thinking {
-  margin: 0;
+  margin: var(--space-4) 0 0;
 }
 
 .composer {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 3.5rem;
+  margin-top: var(--space-5, 1.25rem);
   border: 1px solid var(--border-functional);
+  border-radius: var(--radius-small);
   background: var(--surface);
+}
+
+.composer:focus-within {
+  border-color: var(--ink);
+  outline: 3px solid var(--oxide);
+  outline-offset: 3px;
 }
 
 .composer label {
@@ -826,29 +962,72 @@
 
 .composer textarea {
   width: 100%;
-  min-height: 5.5rem;
+  min-height: 7rem;
   resize: vertical;
-  padding: var(--space-3);
+  padding: var(--space-4);
   border: 0;
   border-radius: 0;
   background: transparent;
   color: var(--ink);
   font-size: 0.875rem;
+  line-height: 1.6;
+  outline: none;
 }
 
-.composer button {
-  min-width: 3.5rem;
-  border: 0;
-  border-radius: 0;
+.composer textarea::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+.composerFooter {
+  display: flex;
+  min-height: 3.75rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  border-top: 1px solid var(--line-decorative);
+}
+
+.composerFooter p {
+  margin: 0 0 0 var(--space-2);
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.composerFooter button {
+  display: inline-flex;
+  min-width: 5.5rem;
+  min-height: 2.75rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding-inline: var(--space-4);
+  border: 1px solid var(--oxide);
+  border-radius: var(--radius-small);
   background: var(--oxide);
   color: var(--surface);
+  font-size: 0.8125rem;
+  font-weight: 680;
   cursor: pointer;
 }
 
-.composer button:disabled {
-  background: var(--line-decorative);
+.composerFooter button:hover {
+  border-color: var(--oxide-dark);
+  background: var(--oxide-dark);
+}
+
+.composerFooter button:disabled {
+  border-color: var(--line-decorative);
+  background: transparent;
   color: var(--muted);
   cursor: not-allowed;
+}
+
+.composerFooter button:focus-visible {
+  outline-offset: 2px;
 }
 
 .acceptPanel .primaryButton {
@@ -910,6 +1089,18 @@
   .productBody {
     padding-block: var(--space-4);
   }
+
+  .chat > header {
+    flex-direction: row;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--space-6);
+  }
+
+  .chat > header p {
+    margin-top: 0;
+    text-align: right;
+  }
 }
 
 @media (min-width: 64rem) {
@@ -949,6 +1140,19 @@
   .handshakeError {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .assistantMessage,
+  .userMessage {
+    max-width: 94%;
+  }
+
+  .composerFooter {
+    align-items: end;
+  }
+
+  .composerFooter p {
+    max-width: 9rem;
   }
 }
 

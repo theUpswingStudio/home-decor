@@ -11,6 +11,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import Markdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useProjectEdit } from "@/lib/project-edit";
 import { fetchWithAiSessionRecovery } from "@/lib/ai/client-session";
 import type {
@@ -34,6 +36,27 @@ function messageText(message: UIMessage): string {
     .filter((part): part is Extract<typeof part, { type: "text" }> => part.type === "text")
     .map((part) => part.text)
     .join("");
+}
+
+const MARKDOWN_COMPONENTS: Components = {
+  a: ({ href, children }) => (
+    <a href={href} target="_blank" rel="noreferrer noopener">{children}</a>
+  ),
+};
+const MARKDOWN_PLUGINS = [remarkGfm];
+
+function AssistantMarkdown({ children }: { readonly children: string }) {
+  return (
+    <div className={styles.messageBody}>
+      <Markdown
+        components={MARKDOWN_COMPONENTS}
+        remarkPlugins={MARKDOWN_PLUGINS}
+        skipHtml
+      >
+        {children}
+      </Markdown>
+    </div>
+  );
 }
 
 function ConsultationChat({
@@ -84,7 +107,9 @@ function ConsultationChat({
       <div className={styles.messages} aria-live="polite">
         <article className={styles.assistantMessage}>
           <span>Vestrel assistant</span>
-          <p>{result.assistantMessage}</p>
+          <div className={styles.messageBubble}>
+            <AssistantMarkdown>{result.assistantMessage}</AssistantMarkdown>
+          </div>
         </article>
         {messages.map((message) => {
           const text = messageText(message);
@@ -95,7 +120,11 @@ function ConsultationChat({
               className={message.role === "user" ? styles.userMessage : styles.assistantMessage}
             >
               <span>{message.role === "user" ? "You" : "Vestrel assistant"}</span>
-              <p>{text}</p>
+              <div className={styles.messageBubble}>
+                {message.role === "user"
+                  ? <p className={styles.plainMessage}>{text}</p>
+                  : <AssistantMarkdown>{text}</AssistantMarkdown>}
+              </div>
             </article>
           );
         })}
@@ -119,17 +148,27 @@ function ConsultationChat({
             value={input}
             placeholder="Ask why a finish works or whether another piece would suit the room."
             onChange={(event) => setInput(event.currentTarget.value)}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
+              event.preventDefault();
+              if (input.trim() && !busy) event.currentTarget.form?.requestSubmit();
+            }}
           />
         </label>
-        {busy ? (
-          <button type="button" onClick={stop} aria-label="Stop response">
-            <StopIcon size={18} weight="fill" aria-hidden="true" />
-          </button>
-        ) : (
-          <button type="submit" disabled={!input.trim()} aria-label="Send message">
-            <PaperPlaneTiltIcon size={19} weight="fill" aria-hidden="true" />
-          </button>
-        )}
+        <div className={styles.composerFooter}>
+          <p>Enter to send · Shift + Enter for a new line</p>
+          {busy ? (
+            <button type="button" onClick={stop}>
+              <StopIcon size={16} weight="fill" aria-hidden="true" />
+              Stop
+            </button>
+          ) : (
+            <button type="submit" disabled={!input.trim()}>
+              <PaperPlaneTiltIcon size={17} weight="fill" aria-hidden="true" />
+              Send
+            </button>
+          )}
+        </div>
       </form>
     </section>
   );
