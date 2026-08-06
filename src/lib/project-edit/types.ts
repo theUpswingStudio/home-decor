@@ -56,3 +56,18 @@ export type SaveProjectEntryResult =
       readonly reason: "invalid" | "unavailable" | "entry-limit" | "already-saved";
       readonly entryCount: number;
     };
+
+export interface ProjectProductConfiguration {
+  readonly productId: string;
+  readonly variantId: string;
+  readonly quantity?: number;
+}
+
+export type SaveProjectConfigurationResult =
+  | { readonly changed: true; readonly entryCount: number; readonly savedCount: number }
+  | {
+      readonly changed: false;
+      readonly reason: "invalid" | "unavailable" | "entry-limit" | "already-saved";
+      readonly entryCount: number;
+      readonly savedCount: 0;
+    };

@@ -96,6 +96,7 @@ export function useProjectEdit() {
     ...snapshot,
     ...resolved,
     saveProduct: projectEditStore.saveProduct,
+    saveProducts: projectEditStore.saveProducts,
     saveRoom: projectEditStore.saveRoom,
     saveMaterial: projectEditStore.saveMaterial,
     remove: projectEditStore.remove,

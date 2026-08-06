@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
@@ -33,9 +33,17 @@ function dimensionsLabel(dimensions: {
 export function ProjectEditPage() {
   const projectEdit = useProjectEdit();
   const [announcement, setAnnouncement] = useState("");
+  const [receivedAiConfiguration, setReceivedAiConfiguration] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const pendingFocusRef = useRef<string[] | null>(null);
   const entrySignature = projectEdit.entries.map(projectEntryKey).join("|");
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setReceivedAiConfiguration(new URLSearchParams(window.location.search).get("source") === "ai");
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   useLayoutEffect(() => {
     const candidateIds = pendingFocusRef.current;
@@ -85,6 +93,12 @@ export function ProjectEditPage() {
   return (
     <Container className={styles.page}>
       <Breadcrumbs items={BREADCRUMBS} />
+      {receivedAiConfiguration ? (
+        <div className={styles.aiConfirmation} role="status">
+          <strong>AI configuration added.</strong>
+          <span>Review the selected finishes and quantities before starting the consultation preview.</span>
+        </div>
+      ) : null}
       <header className={styles.header}>
         <div>
           <h1 ref={headingRef} tabIndex={-1}>Your Project Edit</h1>

@@ -19,6 +19,8 @@ import {
   type ProjectEditPersistence,
   type ProjectEditSnapshot,
   type ProjectEditStorageEnvelope,
+  type ProjectProductConfiguration,
+  type SaveProjectConfigurationResult,
   type SaveProjectEntryResult,
 } from "./types";
 
@@ -385,6 +387,87 @@ export const projectEditStore = {
       quantity: Math.min(99, Math.max(1, Math.trunc(quantity))),
       addedAt: Date.now(),
     });
+  },
+
+  saveProducts(configuration: readonly ProjectProductConfiguration[]): SaveProjectConfigurationResult {
+    ensureInitialized();
+    if (snapshot.status !== "ready") {
+      return { changed: false, reason: "unavailable", entryCount: 0, savedCount: 0 };
+    }
+    if (configuration.length === 0 || configuration.length > 12) {
+      return {
+        changed: false,
+        reason: "invalid",
+        entryCount: snapshot.entries.length,
+        savedCount: 0,
+      };
+    }
+
+    const addedAt = Date.now();
+    const entries: ProjectEditEntry[] = [];
+    const keys = new Set<string>();
+    for (const item of configuration) {
+      const product = getProductById(item.productId);
+      const variant = getVariantById(item.variantId);
+      if (!product || !variant || variant.productId !== product.id) {
+        return {
+          changed: false,
+          reason: "invalid",
+          entryCount: snapshot.entries.length,
+          savedCount: 0,
+        };
+      }
+      const entry: ProjectEditEntry = {
+        type: "product",
+        productId: product.id,
+        variantId: variant.id,
+        quantity: Math.min(99, Math.max(1, Math.trunc(item.quantity ?? 1))),
+        addedAt,
+      };
+      const key = projectEntryKey(entry);
+      if (keys.has(key)) {
+        return {
+          changed: false,
+          reason: "invalid",
+          entryCount: snapshot.entries.length,
+          savedCount: 0,
+        };
+      }
+      keys.add(key);
+      entries.push(entry);
+    }
+
+    refreshFromStorage();
+    let nextEntries = snapshot.entries;
+    let savedCount = 0;
+    for (const entry of entries) {
+      const next = saveProjectEntry(nextEntries, entry);
+      if (next === nextEntries) {
+        const isAlreadySaved = nextEntries.some(
+          (candidate) => projectEntryKey(candidate) === projectEntryKey(entry),
+        );
+        if (isAlreadySaved) continue;
+        return {
+          changed: false,
+          reason: "entry-limit",
+          entryCount: snapshot.entries.length,
+          savedCount: 0,
+        };
+      }
+      nextEntries = next;
+      savedCount += 1;
+    }
+
+    if (savedCount === 0) {
+      return {
+        changed: false,
+        reason: "already-saved",
+        entryCount: snapshot.entries.length,
+        savedCount: 0,
+      };
+    }
+    persist(nextEntries);
+    return { changed: true, entryCount: nextEntries.length, savedCount };
   },
 
   saveRoom(roomId: string): SaveProjectEntryResult {

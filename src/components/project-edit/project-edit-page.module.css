@@ -2,6 +2,22 @@
   padding-block: var(--space-8) var(--space-24);
 }
 
+.aiConfirmation {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-6);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--moss);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.8125rem;
+}
+
+.aiConfirmation span {
+  color: var(--muted);
+}
+
 .header {
   display: grid;
   gap: var(--space-6);

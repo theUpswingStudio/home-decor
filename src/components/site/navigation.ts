@@ -9,4 +9,5 @@ export const primaryNavigation: readonly NavigationItem[] = [
   { href: "/looks", label: "Looks" },
   { href: "/collections", label: "Collections" },
   { href: "/design-services", label: "Design Services" },
+  { href: "/ai-consultation", label: "Design with AI" },
 ];

@@ -58,6 +58,39 @@ describe("Project Edit store", () => {
     unsubscribe();
   });
 
+  it("saves an AI product configuration with one atomic persistence update", async () => {
+    const { fakeWindow, projectEditStore } = await setupStore();
+    const listener = vi.fn();
+    const unsubscribe = projectEditStore.subscribe(listener);
+    const products = catalog.products.slice(0, 3);
+    const configuration = products.map((product) => ({
+      productId: product.id,
+      variantId: product.variantIds[0],
+      quantity: 1,
+    }));
+
+    const result = projectEditStore.saveProducts(configuration);
+
+    expect(result).toMatchObject({ changed: true, savedCount: 3, entryCount: 3 });
+    expect(projectEditStore.getSnapshot().entries).toHaveLength(3);
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(fakeWindow.localStorage.getItem(PROJECT_EDIT_STORAGE_KEY)).not.toBeNull();
+    unsubscribe();
+  });
+
+  it("rejects an invalid AI product configuration without a partial save", async () => {
+    const { projectEditStore } = await setupStore();
+    const unsubscribe = projectEditStore.subscribe(() => undefined);
+    const product = catalog.products[0];
+
+    expect(projectEditStore.saveProducts([
+      { productId: product.id, variantId: product.variantIds[0] },
+      { productId: "missing", variantId: "missing" },
+    ])).toMatchObject({ changed: false, reason: "invalid", savedCount: 0 });
+    expect(projectEditStore.getSnapshot().entries).toEqual([]);
+    unsubscribe();
+  });
+
   it("migrates valid legacy cart lines and removes the old key", async () => {
     const product = catalog.products[0];
     const fakeWindow = new FakeWindow();
