@@ -72,3 +72,34 @@ export const chatRequestSchema = z.object({
   intake: consultationIntakeSchema,
   context: recommendationContextSchema,
 });
+
+const previewProductSchema = z.object({
+  productId: z.string().trim().min(1).max(80),
+  variantId: z.string().trim().min(1).max(80),
+});
+
+export const previewRequestSchema = z.object({
+  imageDataUrl: z.string().max(8_500_000).refine(
+    (value) => /^data:image\/jpeg;base64,[a-zA-Z0-9+/=]+$/.test(value),
+    "Use the prepared JPEG room image.",
+  ),
+  room: z.object({
+    assetId: z.string().uuid(),
+    fileName: z.string().trim().min(1).max(180),
+    mediaType: z.literal("image/jpeg"),
+    width: z.number().int().min(1).max(10_000),
+    height: z.number().int().min(1).max(10_000),
+  }),
+  intake: consultationIntakeSchema,
+  products: z.array(previewProductSchema).min(1).max(3),
+  attempt: z.union([z.literal(1), z.literal(2)]),
+}).superRefine((value, context) => {
+  const pairs = new Set(value.products.map((product) => `${product.productId}:${product.variantId}`));
+  if (pairs.size !== value.products.length) {
+    context.addIssue({
+      code: "custom",
+      path: ["products"],
+      message: "Choose each product once.",
+    });
+  }
+});

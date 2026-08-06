@@ -3,13 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "bash scripts/dev.sh",
+    "dev:web": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "pnpm build && playwright test"
+    "test:e2e": "NEXT_DIST_DIR=.next-e2e next build && NEXT_DIST_DIR=.next-e2e playwright test"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.89",
@@ -32,8 +33,10 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "concurrently": "^10.0.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
+    "fake-indexeddb": "^6.2.5",
     "tailwindcss": "^4",
     "typescript": "^6",
     "vitest": "^4.1.10"

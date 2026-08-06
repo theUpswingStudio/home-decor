@@ -116,7 +116,11 @@ export function createAiSessionHandshake(request: Request): Response {
   const existingSessionId = readSessionId(request);
   if (existingSessionId) {
     return Response.json(
-      { csrfToken: csrfFor(existingSessionId), expiresInSeconds: SESSION_MAX_AGE_MS / 1000 },
+      {
+        csrfToken: csrfFor(existingSessionId),
+        expiresInSeconds: SESSION_MAX_AGE_MS / 1000,
+        previewAvailable: Boolean(process.env.OPENROUTER_API_KEY?.trim()),
+      },
       { headers: { "Cache-Control": "no-store" } },
     );
   }
@@ -143,7 +147,11 @@ export function createAiSessionHandshake(request: Request): Response {
   const cookieValue = `${unsigned}.${sign(unsigned)}`;
   const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
   return Response.json(
-    { csrfToken: csrfFor(sessionId), expiresInSeconds: SESSION_MAX_AGE_MS / 1000 },
+    {
+      csrfToken: csrfFor(sessionId),
+      expiresInSeconds: SESSION_MAX_AGE_MS / 1000,
+      previewAvailable: Boolean(process.env.OPENROUTER_API_KEY?.trim()),
+    },
     {
       headers: {
         "Cache-Control": "no-store",

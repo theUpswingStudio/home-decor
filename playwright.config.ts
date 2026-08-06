@@ -12,10 +12,9 @@ export default defineConfig({
   outputDir: "tests/.artifacts/playwright",
   use: {
     baseURL,
-    launchOptions: {
-      executablePath:
-        process.env.PLAYWRIGHT_CHROMIUM_PATH ?? "/usr/bin/chromium",
-    },
+    launchOptions: process.env.PLAYWRIGHT_CHROMIUM_PATH
+      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH }
+      : undefined,
     screenshot: "only-on-failure",
     trace: "on-first-retry",
   },
@@ -30,7 +29,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `pnpm start --hostname 127.0.0.1 --port ${port}`,
+    command: `AI_PROVIDER=mock OPENROUTER_API_KEY=e2e-placeholder AI_SESSION_SECRET=e2e-session-secret-change-me APP_ORIGIN=${baseURL} pnpm start --hostname 127.0.0.1 --port ${port}`,
     url: baseURL,
     reuseExistingServer: false,
     timeout: 120_000,

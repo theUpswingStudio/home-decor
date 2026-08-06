@@ -18,6 +18,7 @@ import {
   type ConsultationIntake,
   type ConsultationPriority,
   type DimensionMode,
+  type PreparedRoomAsset,
 } from "@/lib/ai/consultation-types";
 import {
   prepareRoomImage,
@@ -35,9 +36,10 @@ export const INTAKE_STEPS = [
 
 interface ConsultationIntakeProps {
   readonly session: ConsultationSessionState;
+  readonly roomUrl: string;
   readonly busy: boolean;
   readonly onIntakeChange: (patch: Partial<ConsultationIntake>) => void;
-  readonly onImageChange: (imageDataUrl: string, fileName: string) => void;
+  readonly onImageChange: (room: PreparedRoomAsset) => void;
   readonly onStepChange: (step: number) => void;
   readonly onAnalyze: () => void;
 }
@@ -68,9 +70,10 @@ function OptionRows({ children }: { readonly children: React.ReactNode }) {
 
 function StepOne({
   session,
+  roomUrl,
   onIntakeChange,
   onImageChange,
-}: Pick<ConsultationIntakeProps, "session" | "onIntakeChange" | "onImageChange">) {
+}: Pick<ConsultationIntakeProps, "session" | "roomUrl" | "onIntakeChange" | "onImageChange">) {
   const [imageError, setImageError] = useState("");
   const [preparing, setPreparing] = useState(false);
 
@@ -79,7 +82,7 @@ function StepOne({
     setPreparing(true);
     setImageError("");
     try {
-      onImageChange(await prepareRoomImage(file), file.name);
+      onImageChange(await prepareRoomImage(file));
     } catch (error) {
       setImageError(error instanceof Error ? error.message : "The image could not be prepared.");
     } finally {
@@ -108,23 +111,23 @@ function StepOne({
       </AssistantQuestion>
 
       <div className={styles.uploadSection}>
-        {session.imageDataUrl ? (
+        {session.room && roomUrl ? (
           <div className={styles.uploadPreview}>
             <Image
-              src={session.imageDataUrl}
+              src={roomUrl}
               alt="Uploaded room reference"
-              width={1_600}
-              height={1_000}
+              width={session.room.width}
+              height={session.room.height}
               sizes="(max-width: 64rem) 100vw, 58vw"
               unoptimized
             />
-            <div><FileImageIcon size={18} aria-hidden="true" />{session.fileName}</div>
+            <div><FileImageIcon size={18} aria-hidden="true" />{session.room.fileName}</div>
           </div>
         ) : null}
         <label className={styles.uploadControl}>
           <UploadSimpleIcon size={20} aria-hidden="true" />
           <span>
-            <strong>{preparing ? "Preparing image…" : session.imageDataUrl ? "Replace room image" : "Choose room image"}</strong>
+            <strong>{preparing ? "Preparing image…" : session.room ? "Replace room image" : "Choose room image"}</strong>
             <span>JPEG, PNG, or WebP · 8 MB maximum</span>
           </span>
           <input
@@ -313,18 +316,20 @@ function StepFour({
 
 export function ConsultationIntakePanel({
   session,
+  roomUrl,
   busy,
   onIntakeChange,
   onImageChange,
   onStepChange,
   onAnalyze,
 }: ConsultationIntakeProps) {
-  const canContinue = session.step !== 1 || Boolean(session.imageDataUrl);
+  const canContinue = session.step !== 1 || Boolean(session.room);
   return (
     <section className={styles.intakePanel} aria-label="Guided room intake">
       {session.step === 1 ? (
         <StepOne
           session={session}
+          roomUrl={roomUrl}
           onIntakeChange={onIntakeChange}
           onImageChange={onImageChange}
         />

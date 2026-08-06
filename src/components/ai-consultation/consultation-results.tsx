@@ -3,6 +3,7 @@
 import {
   ArrowRightIcon,
   PaperPlaneTiltIcon,
+  SparkleIcon,
   StopIcon,
 } from "@phosphor-icons/react";
 import { useChat } from "@ai-sdk/react";
@@ -17,7 +18,9 @@ import { useProjectEdit } from "@/lib/project-edit";
 import { fetchWithAiSessionRecovery } from "@/lib/ai/client-session";
 import type {
   ConsultationIntake,
+  ConsultationPreview,
   ConsultationResult,
+  PreparedRoomAsset,
 } from "@/lib/ai/consultation-types";
 import styles from "./consultation-workspace.module.css";
 
@@ -175,9 +178,127 @@ function ConsultationChat({
 }
 
 interface ConsultationResultsProps extends ConsultationChatProps {
+  readonly room: PreparedRoomAsset | null;
+  readonly roomUrl: string;
+  readonly preview: ConsultationPreview;
+  readonly previewUrl: string;
   readonly selectedProductIds: readonly string[];
   readonly onSelectedProductIdsChange: (productIds: readonly string[]) => void;
+  readonly onRetryPreview: (productIds: readonly string[]) => void;
   readonly onRevise: () => void;
+}
+
+function sameProductSelection(left: readonly string[], right: readonly string[]): boolean {
+  if (left.length !== right.length) return false;
+  const rightIds = new Set(right);
+  return left.every((productId) => rightIds.has(productId));
+}
+
+function RoomPreviewSection({
+  room,
+  roomUrl,
+  preview,
+  previewUrl,
+  selectedProductIds,
+  onRetry,
+}: {
+  readonly room: PreparedRoomAsset | null;
+  readonly roomUrl: string;
+  readonly preview: ConsultationPreview;
+  readonly previewUrl: string;
+  readonly selectedProductIds: readonly string[];
+  readonly onRetry: (productIds: readonly string[]) => void;
+}) {
+  const selectionChanged = preview.productIds.length > 0
+    && !sameProductSelection(preview.productIds, selectedProductIds);
+  const canRetry = preview.attempt === 1
+    && (preview.status === "ready" || preview.status === "error");
+
+  return (
+    <section className={styles.previewSection} aria-labelledby="room-preview-title">
+      <header className={styles.previewHeading}>
+        <div>
+          <h2 id="room-preview-title">Your room, reimagined</h2>
+          <p>A high-quality concept built from the room and selected catalog references.</p>
+        </div>
+        {preview.status === "rendering" ? <span aria-hidden="true">Rendering</span> : null}
+      </header>
+
+      {preview.status === "rendering" ? (
+        <div className={styles.previewProgress} role="status" aria-live="polite">
+          <SparkleIcon size={24} weight="fill" aria-hidden="true" />
+          <div>
+            <strong>Composing the room preview</strong>
+            <p>The recommendations and chat remain available while the image renders.</p>
+          </div>
+          <span className={styles.previewProgressLine} aria-hidden="true" />
+        </div>
+      ) : null}
+
+      {room && roomUrl && preview.blob && previewUrl ? (
+        <div className={styles.previewComparison}>
+          <figure>
+            <div className={styles.previewImageFrame}>
+              <Image
+                src={roomUrl}
+                alt="Original uploaded room"
+                width={room.width}
+                height={room.height}
+                sizes="(max-width: 48rem) 100vw, 50vw"
+                unoptimized
+              />
+            </div>
+            <figcaption>Original room</figcaption>
+          </figure>
+          <figure>
+            <div className={styles.previewImageFrame}>
+              <Image
+                src={previewUrl}
+                alt="AI-generated room concept with the recommended furniture"
+                width={room.width}
+                height={room.height}
+                sizes="(max-width: 48rem) 100vw, 50vw"
+                unoptimized
+              />
+            </div>
+            <figcaption>AI concept preview</figcaption>
+          </figure>
+        </div>
+      ) : null}
+
+      {preview.status === "ready" && !previewUrl ? (
+        <p className={styles.previewRestore} role="status">Restoring the saved preview…</p>
+      ) : null}
+
+      {preview.status === "error" || preview.status === "unavailable" ? (
+        <div className={styles.previewError} role="alert">
+          <strong>{preview.status === "unavailable" ? "Preview unavailable" : "Preview not completed"}</strong>
+          <p>{preview.error}</p>
+        </div>
+      ) : null}
+
+      {selectionChanged && preview.status === "ready" ? (
+        <p className={styles.previewSelectionNote}>
+          This image uses the earlier recommendation selection. Render again to use the current products.
+        </p>
+      ) : null}
+
+      <footer className={styles.previewFooter}>
+        <p>AI concept preview. Product details, color, scale, and placement can differ.</p>
+        {canRetry ? (
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            disabled={selectedProductIds.length === 0}
+            onClick={() => onRetry(selectedProductIds)}
+          >
+            <SparkleIcon size={17} weight="fill" aria-hidden="true" />
+            {selectionChanged ? "Render current selection" : "Try one more render"}
+          </button>
+        ) : null}
+      </footer>
+    </section>
+  );
 }
 
 export function ConsultationResults({
@@ -186,10 +307,15 @@ export function ConsultationResults({
   refreshSession,
   intake,
   result,
+  room,
+  roomUrl,
+  preview,
+  previewUrl,
   selectedProductIds,
   initialMessages,
   onMessagesChange,
   onSelectedProductIdsChange,
+  onRetryPreview,
   onRevise,
 }: ConsultationResultsProps) {
   const router = useRouter();
@@ -226,6 +352,14 @@ export function ConsultationResults({
 
   return (
     <div className={styles.resultsLayout}>
+      <RoomPreviewSection
+        room={room}
+        roomUrl={roomUrl}
+        preview={preview}
+        previewUrl={previewUrl}
+        selectedProductIds={selectedProductIds}
+        onRetry={onRetryPreview}
+      />
       <div className={styles.resultMain}>
         <section className={styles.analysis} aria-labelledby="analysis-title">
           <div className={styles.analysisHeading}>

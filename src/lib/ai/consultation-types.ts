@@ -129,6 +129,48 @@ export interface ConsultationResult {
   readonly recommendations: readonly ProductRecommendation[];
 }
 
+export interface PreparedRoomAsset {
+  readonly assetId: string;
+  readonly blob: Blob;
+  readonly fileName: string;
+  readonly mediaType: "image/jpeg";
+  readonly width: number;
+  readonly height: number;
+}
+
+export type ConsultationPreviewStatus =
+  | "idle"
+  | "rendering"
+  | "ready"
+  | "unavailable"
+  | "error";
+
+export interface ConsultationPreview {
+  readonly status: ConsultationPreviewStatus;
+  readonly attempt: 0 | 1 | 2;
+  readonly blob: Blob | null;
+  readonly mediaType: string;
+  readonly model: string;
+  readonly promptVersion: string;
+  readonly signature: string;
+  readonly productIds: readonly string[];
+  readonly createdAt: number | null;
+  readonly error: string;
+}
+
+export const EMPTY_CONSULTATION_PREVIEW: ConsultationPreview = {
+  status: "idle",
+  attempt: 0,
+  blob: null,
+  mediaType: "",
+  model: "",
+  promptVersion: "",
+  signature: "",
+  productIds: [],
+  createdAt: null,
+  error: "",
+};
+
 export const DEFAULT_CONSULTATION_INTAKE: ConsultationIntake = {
   roomId: "room-living",
   dimensionMode: "medium",
