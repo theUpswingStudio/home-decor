@@ -60,6 +60,40 @@ function record(id: string): Omit<SavedConsultationRecord, "updatedAt" | "expire
 }
 
 describe("consultation IndexedDB storage", () => {
+  it("waits for an earlier save before loading the latest record", async () => {
+    const storage = createConsultationStorage({
+      indexedDB: new IDBFactory(), localStorage: new MemoryPointerStorage(),
+    });
+    const saving = storage.save(record("pending-save"));
+    const loading = storage.loadLatest();
+
+    await saving;
+    await expect(loading).resolves.toMatchObject({ id: "pending-save" });
+  });
+
+  it("clears a save that was still pending when reset was requested", async () => {
+    const pointers = new MemoryPointerStorage();
+    const storage = createConsultationStorage({ indexedDB: new IDBFactory(), localStorage: pointers });
+    const saving = storage.save(record("discarded"));
+    const clearing = storage.clear();
+
+    await Promise.all([saving, clearing]);
+    await expect(storage.loadLatest()).resolves.toBeNull();
+    expect(pointers.getItem(CONSULTATION_POINTER_KEY)).toBeNull();
+  });
+
+  it("orders a new draft after clearing a pending old draft", async () => {
+    const storage = createConsultationStorage({
+      indexedDB: new IDBFactory(), localStorage: new MemoryPointerStorage(),
+    });
+    const savingOld = storage.save(record("old-draft"));
+    const clearing = storage.clear();
+    const savingNew = storage.save(record("new-draft"));
+
+    await Promise.all([savingOld, clearing, savingNew]);
+    await expect(storage.loadLatest()).resolves.toMatchObject({ id: "new-draft" });
+  });
+
   it("saves and restores room and preview blobs without chat data", async () => {
     const pointers = new MemoryPointerStorage();
     const storage = createConsultationStorage({
@@ -108,4 +142,23 @@ describe("consultation IndexedDB storage", () => {
     await expect(storage.loadLatest()).resolves.toBeNull();
     expect(pointers.getItem(CONSULTATION_POINTER_KEY)).toBeNull();
   });
+  it("keeps the write queue usable after failure", async () => {
+    const pointers = new MemoryPointerStorage();
+    let fail = true;
+    const storage = createConsultationStorage({ indexedDB: new IDBFactory(), localStorage: {
+      getItem: (key) => pointers.getItem(key),
+      removeItem: (key) => pointers.removeItem(key),
+      setItem: (key, value) => {
+        if (fail) { fail = false; throw new Error("Storage full"); }
+        pointers.setItem(key, value);
+      },
+    } });
+    const failed = storage.save(record("old"));
+    const clear = storage.clear();
+    const saved = storage.save(record("new"));
+    await expect(failed).rejects.toThrow("Storage full");
+    await Promise.all([clear, saved]);
+    expect((await storage.loadLatest())?.id).toBe("new");
+  });
+
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import type { UIMessage } from "ai";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CONSULTATION_STORAGE_VERSION,
   createConsultationStorage,
@@ -61,7 +61,9 @@ function restoreSession(record: SavedConsultationRecord): ConsultationSessionSta
       ? {
           ...record.preview,
           status: "error",
-          error: "The previous image render was interrupted. Use your retry to continue.",
+          error: record.preview.attempt === 2
+            ? "The previous image render was interrupted. Your preview retry is already used. Your recommendations are still available."
+            : "The previous image render was interrupted. Use your retry to continue.",
         }
       : record.preview,
   };
@@ -154,6 +156,8 @@ export function useConsultationSession() {
   const [state, setState] = useState<ConsultationSessionState>(() => createSession());
   const [ready, setReady] = useState(false);
   const [persistenceError, setPersistenceError] = useState(false);
+  const persistenceEpoch = useRef(0);
+  const persistenceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const roomUrl = useBlobUrl(state.room?.blob ?? null);
   const previewUrl = useBlobUrl(state.preview.blob);
   const {
@@ -200,14 +204,16 @@ export function useConsultationSession() {
   }, [storage]);
 
   useEffect(() => {
-    if (!ready) return;
-    const timer = window.setTimeout(() => {
-      const operation = durableRecord ? storage.save(durableRecord) : storage.clear();
-      void operation
-        .then(() => setPersistenceError(false))
-        .catch(() => setPersistenceError(true));
+    if (!ready || !durableRecord) return;
+    const epoch = persistenceEpoch.current;
+    const timer = setTimeout(() => {
+      if (persistenceEpoch.current !== epoch) return;
+      void storage.save(durableRecord)
+        .then(() => { if (persistenceEpoch.current === epoch) setPersistenceError(false); })
+        .catch(() => { if (persistenceEpoch.current === epoch) setPersistenceError(true); });
     }, 80);
-    return () => window.clearTimeout(timer);
+    persistenceTimer.current = timer;
+    return () => clearTimeout(timer);
   }, [
     ready,
     durableRecord,
@@ -290,11 +296,17 @@ export function useConsultationSession() {
     }));
   }, []);
 
-  const reset = useCallback(() => {
+  const reset = useCallback(async (): Promise<void> => {
+    const epoch = ++persistenceEpoch.current;
+    if (persistenceTimer.current !== null) clearTimeout(persistenceTimer.current);
     setState(createSession());
-    void storage.clear()
-      .then(() => setPersistenceError(false))
-      .catch(() => setPersistenceError(true));
+    try {
+      await storage.clear();
+      if (persistenceEpoch.current === epoch) setPersistenceError(false);
+    } catch (reason) {
+      if (persistenceEpoch.current === epoch) setPersistenceError(true);
+      throw reason;
+    }
   }, [storage]);
 
   return {
@@ -346,43 +358,101 @@ function sessionErrorMessage(reason: unknown): string {
   return reason instanceof Error ? reason.message : "The protected design session could not start.";
 }
 
+interface ActiveSessionRefresh {
+  readonly controller: AbortController;
+  readonly waiters: Set<symbol>;
+  readonly promise: Promise<string>;
+}
+
 export function useAiHandshake() {
   const [csrfToken, setCsrfToken] = useState("");
   const [previewAvailable, setPreviewAvailable] = useState(false);
   const [error, setError] = useState("");
 
-  const refresh = useCallback(async (): Promise<string> => {
-    setCsrfToken("");
-    setError("");
+  const activeRefresh = useRef<ActiveSessionRefresh | null>(null);
+
+  const refresh = useCallback(async (signal?: AbortSignal): Promise<string> => {
+    signal?.throwIfAborted();
+    let operation = activeRefresh.current;
+    if (!operation) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(
+        new Error("The protected design session took too long to start. Try again."),
+      ), 20_000);
+      let rejectAborted: (() => void) | undefined;
+      setError("");
+      const pending: ActiveSessionRefresh = {
+        controller,
+        waiters: new Set(),
+        promise: Promise.race([
+          requestAiSession(controller.signal),
+          new Promise<never>((_, reject) => {
+            rejectAborted = () => reject(controller.signal.reason);
+            controller.signal.addEventListener("abort", rejectAborted, { once: true });
+          }),
+        ]).then((session) => {
+          controller.signal.throwIfAborted();
+          if (activeRefresh.current !== pending) throw new DOMException("Abandoned session refresh", "AbortError");
+          setCsrfToken(session.csrfToken);
+          setPreviewAvailable(session.previewAvailable);
+          return session.csrfToken;
+        }).catch((reason: unknown) => {
+          if (activeRefresh.current === pending) {
+            setCsrfToken("");
+            setError(sessionErrorMessage(reason));
+          }
+          throw reason;
+        }).finally(() => {
+          clearTimeout(timer);
+          if (rejectAborted) controller.signal.removeEventListener("abort", rejectAborted);
+          if (activeRefresh.current === pending) activeRefresh.current = null;
+        }),
+      };
+      activeRefresh.current = pending;
+      operation = pending;
+    }
+
+    // Chat and preview can share renewal without sharing cancellation.
+    const waiter = Symbol();
+    operation.waiters.add(waiter);
+    let abandon: (() => void) | undefined;
     try {
-      const session = await requestAiSession();
-      setCsrfToken(session.csrfToken);
-      setPreviewAvailable(session.previewAvailable);
-      return session.csrfToken;
-    } catch (reason) {
-      setError(sessionErrorMessage(reason));
-      throw reason;
+      const token = signal ? await Promise.race([
+        operation.promise,
+        new Promise<never>((_, reject) => {
+          abandon = () => reject(signal.reason);
+          signal.addEventListener("abort", abandon, { once: true });
+          if (signal.aborted) abandon();
+        }),
+      ]) : await operation.promise;
+      signal?.throwIfAborted();
+      return token;
+    } finally {
+      if (abandon) signal?.removeEventListener("abort", abandon);
+      operation.waiters.delete(waiter);
+      if (operation.waiters.size === 0 && activeRefresh.current === operation) {
+        activeRefresh.current = null;
+        operation.controller.abort();
+      }
     }
   }, []);
 
   useEffect(() => {
-    const controller = new AbortController();
-    void requestAiSession(controller.signal)
-      .then((session) => {
-        setCsrfToken(session.csrfToken);
-        setPreviewAvailable(session.previewAvailable);
-      })
-      .catch((reason: unknown) => {
-        if (!controller.signal.aborted) setError(sessionErrorMessage(reason));
-      });
-    return () => controller.abort();
-  }, []);
+    let mounted = true;
+    queueMicrotask(() => { if (mounted) void refresh().catch(() => undefined); });
+    return () => {
+      mounted = false;
+      const operation = activeRefresh.current;
+      activeRefresh.current = null;
+      operation?.controller.abort();
+    };
+  }, [refresh]);
 
   return {
     csrfToken,
     previewAvailable,
     error,
-    refresh: () => refresh(),
+    refresh,
     retry: () => void refresh().catch(() => undefined),
   };
 }

@@ -117,8 +117,16 @@ function getBrowserEnvironment(overrides: ConsultationStorageEnvironment): Requi
 export function createConsultationStorage(
   overrides: ConsultationStorageEnvironment = {},
 ): ConsultationStorage {
+  let writes: Promise<void> = Promise.resolve();
+  function enqueueWrite(operation: () => Promise<void>): Promise<void> {
+    const next = writes.then(operation);
+    writes = next.catch(() => undefined);
+    return next;
+  }
+
   return {
     async loadLatest() {
+      await writes;
       const environment = getBrowserEnvironment(overrides);
       const latestId = environment.localStorage.getItem(CONSULTATION_POINTER_KEY);
       const database = await openDatabase(environment.indexedDB);
@@ -139,38 +147,42 @@ export function createConsultationStorage(
       }
     },
 
-    async save(record) {
-      const environment = getBrowserEnvironment(overrides);
-      const now = environment.now();
-      const savedRecord: SavedConsultationRecord = {
-        ...record,
-        updatedAt: now,
-        expiresAt: now + CONSULTATION_RETENTION_MS,
-      };
-      const database = await openDatabase(environment.indexedDB);
-      try {
-        const transaction = database.transaction(STORE_NAME, "readwrite");
-        const store = transaction.objectStore(STORE_NAME);
-        await deleteExpired(store, now);
-        store.put(savedRecord);
-        await transactionComplete(transaction);
-        environment.localStorage.setItem(CONSULTATION_POINTER_KEY, record.id);
-      } finally {
-        database.close();
-      }
+    save(record) {
+      return enqueueWrite(async () => {
+        const environment = getBrowserEnvironment(overrides);
+        const now = environment.now();
+        const savedRecord: SavedConsultationRecord = {
+          ...record,
+          updatedAt: now,
+          expiresAt: now + CONSULTATION_RETENTION_MS,
+        };
+        const database = await openDatabase(environment.indexedDB);
+        try {
+          const transaction = database.transaction(STORE_NAME, "readwrite");
+          const store = transaction.objectStore(STORE_NAME);
+          await deleteExpired(store, now);
+          store.put(savedRecord);
+          await transactionComplete(transaction);
+          environment.localStorage.setItem(CONSULTATION_POINTER_KEY, record.id);
+        } finally {
+          database.close();
+        }
+      });
     },
 
-    async clear() {
-      const environment = getBrowserEnvironment(overrides);
-      const database = await openDatabase(environment.indexedDB);
-      try {
-        const transaction = database.transaction(STORE_NAME, "readwrite");
-        transaction.objectStore(STORE_NAME).clear();
-        await transactionComplete(transaction);
-        environment.localStorage.removeItem(CONSULTATION_POINTER_KEY);
-      } finally {
-        database.close();
-      }
+    clear() {
+      return enqueueWrite(async () => {
+        const environment = getBrowserEnvironment(overrides);
+        const database = await openDatabase(environment.indexedDB);
+        try {
+          const transaction = database.transaction(STORE_NAME, "readwrite");
+          transaction.objectStore(STORE_NAME).clear();
+          await transactionComplete(transaction);
+          environment.localStorage.removeItem(CONSULTATION_POINTER_KEY);
+        } finally {
+          database.close();
+        }
+      });
     },
   };
 }

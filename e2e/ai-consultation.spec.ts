@@ -1,41 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-
-async function createTestJpeg(page: Page): Promise<Buffer> {
-  const bytes = await page.evaluate(async () => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 640;
-    canvas.height = 400;
-    const context = canvas.getContext("2d");
-    if (!context) throw new Error("Canvas is unavailable.");
-    context.fillStyle = "#d8d0c3";
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = "#4f6047";
-    context.fillRect(80, 80, 220, 180);
-    const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(
-      (value) => value ? resolve(value) : reject(new Error("JPEG creation failed.")),
-      "image/jpeg",
-      0.85,
-    ));
-    return [...new Uint8Array(await blob.arrayBuffer())];
-  });
-  return Buffer.from(bytes);
-}
-
-async function buildRecommendations(page: Page, roomImage: Buffer) {
-  await page.goto("/ai-consultation");
-  await expect(page.getByRole("heading", { name: "Design with AI" })).toBeVisible();
-  await page.locator('input[type="file"]').setInputFiles({
-    name: "living-room.png",
-    mimeType: "image/jpeg",
-    buffer: roomImage,
-  });
-  await expect(page.getByLabel("Guided room intake").getByText("living-room.png")).toBeVisible();
-
-  await page.getByRole("button", { name: "Continue" }).click();
-  await page.getByRole("button", { name: "Continue" }).click();
-  await page.getByRole("button", { name: "Continue" }).click();
-  await page.getByRole("button", { name: "Build recommendations" }).click();
-}
+import { expect } from "@playwright/test";
+import { buildRecommendations, createTestJpeg, test } from "./helpers/ai-consultation";
 
 test("renders once, retries the current selection, and restores without chat", async ({ page }) => {
   const roomImage = await createTestJpeg(page);
@@ -64,7 +28,7 @@ test("renders once, retries the current selection, and restores without chat", a
 
   await expect(page.getByRole("heading", { name: "Catalog recommendations" })).toBeVisible();
   await expect(page.getByText("Composing the room preview")).toBeVisible();
-  expect(previewBodies).toHaveLength(1);
+  await expect.poll(() => previewBodies.length).toBe(1);
 
   finishFirstPreview?.();
   await expect(page.getByText("Original room", { exact: true })).toBeVisible();
@@ -95,7 +59,16 @@ test("renders once, retries the current selection, and restores without chat", a
   await expect(page.getByText(chatMessage, { exact: true })).toHaveCount(0);
   expect(previewBodies).toHaveLength(2);
 
-  await page.getByRole("button", { name: "Start over" }).click();
+  const startOver = page.getByRole("button", { name: "Start over", exact: true });
+  await startOver.click();
+  const dialog = page.getByRole("dialog", { name: "Start over?" });
+  await expect(dialog).not.toContainText("Work already sent to the provider may continue.");
+  await dialog.getByRole("button", { name: "Keep working" }).click();
+  await expect(startOver).toBeFocused();
+  await expect(page.getByText("AI concept preview", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Include in Project Edit").first()).not.toBeChecked();
+  await startOver.click();
+  await page.getByRole("button", { name: "Clear and start over", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Which room are we working on?" })).toBeVisible();
   await page.waitForTimeout(150);
   await page.reload();

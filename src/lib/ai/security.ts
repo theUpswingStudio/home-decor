@@ -81,6 +81,9 @@ function consumeWindow(
   limit: number,
   durationMs: number,
 ): { allowed: boolean; retryAfterSeconds: number } {
+  if (process.env.NODE_ENV === "development") {
+    return { allowed: true, retryAfterSeconds: 0 };
+  }
   const now = Date.now();
   const cutoff = now - durationMs;
   const window = windows.get(key) ?? { timestamps: [] };

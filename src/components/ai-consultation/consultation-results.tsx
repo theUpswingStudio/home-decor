@@ -27,11 +27,12 @@ import styles from "./consultation-workspace.module.css";
 interface ConsultationChatProps {
   readonly sessionId: string;
   readonly csrfToken: string;
-  readonly refreshSession: () => Promise<string>;
+  readonly refreshSession: (signal?: AbortSignal) => Promise<string>;
   readonly intake: ConsultationIntake;
   readonly result: ConsultationResult;
   readonly initialMessages: readonly UIMessage[];
   readonly onMessagesChange: (messages: readonly UIMessage[]) => void;
+  readonly onBusyChange: (busy: boolean) => void;
 }
 
 function messageText(message: UIMessage): string {
@@ -70,6 +71,7 @@ function ConsultationChat({
   result,
   initialMessages,
   onMessagesChange,
+  onBusyChange,
 }: ConsultationChatProps) {
   const [input, setInput] = useState("");
   const transport = useMemo(() => new DefaultChatTransport({
@@ -100,6 +102,8 @@ function ConsultationChat({
   }, [messages, onMessagesChange]);
 
   const busy = status === "submitted" || status === "streaming";
+  useEffect(() => { onBusyChange(busy); }, [busy, onBusyChange]);
+  useEffect(() => () => { void stop(); }, [stop]);
 
   return (
     <section className={styles.chat} aria-labelledby="consultation-chat-title">
@@ -177,7 +181,9 @@ function ConsultationChat({
   );
 }
 
-interface ConsultationResultsProps extends ConsultationChatProps {
+interface ConsultationResultsProps extends Omit<ConsultationChatProps, "onBusyChange"> {
+  readonly briefLocked: boolean;
+  readonly onChatBusyChange: (busy: boolean) => void;
   readonly room: PreparedRoomAsset | null;
   readonly roomUrl: string;
   readonly preview: ConsultationPreview;
@@ -317,6 +323,8 @@ export function ConsultationResults({
   onSelectedProductIdsChange,
   onRetryPreview,
   onRevise,
+  briefLocked,
+  onChatBusyChange,
 }: ConsultationResultsProps) {
   const router = useRouter();
   const projectEdit = useProjectEdit();
@@ -367,8 +375,21 @@ export function ConsultationResults({
               <h2 id="analysis-title">Your first room edit</h2>
               <p>{result.analysis.summary}</p>
             </div>
-            <button type="button" className={styles.textButton} onClick={onRevise}>Revise brief</button>
+            <button
+              type="button"
+              className={styles.textButton}
+              onClick={onRevise}
+              disabled={briefLocked}
+              aria-describedby={briefLocked ? "results-brief-editing" : undefined}
+            >
+              Revise brief
+            </button>
           </div>
+          {briefLocked ? (
+            <p id="results-brief-editing" className={styles.reviewNotice}>
+              Editing is unavailable until generation finishes.
+            </p>
+          ) : null}
           <div className={styles.analysisLimitations}>
             <strong>What this image cannot confirm</strong>
             <ul>
@@ -470,6 +491,7 @@ export function ConsultationResults({
         result={result}
         initialMessages={initialMessages}
         onMessagesChange={onMessagesChange}
+        onBusyChange={onChatBusyChange}
       />
     </div>
   );

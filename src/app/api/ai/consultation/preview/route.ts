@@ -125,7 +125,7 @@ export async function POST(request: Request) {
     }
     if (error instanceof PreviewAttemptError) {
       return Response.json(
-        { error: "This image attempt was already used. Start a new consultation for another render." },
+        { error: "This preview attempt is already used for this session. Your recommendations are still available." },
         { status: 409, headers: { "Cache-Control": "no-store" } },
       );
     }
